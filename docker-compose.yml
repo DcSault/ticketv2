@@ -7,27 +7,29 @@ services:
     working_dir: /app
     command: |
       sh -c '
-        echo "� Installing git..." &&
+        set -e
+        echo "Installing git..." &&
         apk add --no-cache git &&
-        echo "📥 Cloning repository..." &&
+        echo "Cloning repository..." &&
         rm -rf /tmp/ticketv2 &&
         git clone https://github.com/DcSault/ticketv2.git /tmp/ticketv2 &&
-        echo "📦 Copying files..." &&
+        echo "Copying files..." &&
         cp -R /tmp/ticketv2/* /app/ &&
+        cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || true &&
         rm -rf /tmp/ticketv2 &&
-        echo "📦 Installing dependencies..." &&
+        echo "Installing dependencies..." &&
         npm install --production=false &&
-        echo "📦 Installing client dependencies..." &&
+        echo "Installing client dependencies..." &&
         cd client && npm install --production=false && cd .. &&
-        echo 'Building frontend for production...' &&
+        echo "Building frontend for production..." &&
         cd client && npm run build && cd .. &&
-        echo 'Verifying build...' &&
+        echo "Verifying build..." &&
         ls -la /app/client/dist/ &&
-        echo 'Waiting for database...' &&
+        echo "Waiting for database..." &&
         sleep 5 &&
-        echo 'Setting up database...' &&
+        echo "Setting up database..." &&
         node server/scripts/setup-db.js &&
-        echo 'Starting application...' &&
+        echo "Starting application..." &&
         npm start
       '
     ports:
@@ -57,7 +59,7 @@ services:
       - ticketv2_data:/app
     networks:
       - ticketv2-network
-    restart: unless-stopped
+    restart: "no"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
