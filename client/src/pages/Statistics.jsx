@@ -113,6 +113,14 @@ function Statistics() {
                 🛠️ Admin
               </button>
             )}
+            {user?.role === 'tenant_admin' && (
+              <button
+                onClick={() => navigate('/admin-tenant')}
+                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+              >
+                👥 Admin Tenant
+              </button>
+            )}
             <span className="text-gray-300">|</span>
             <span className="text-sm text-gray-600">
               {user?.fullName || user?.username}

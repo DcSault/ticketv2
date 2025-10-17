@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import App from './pages/App';
 import Statistics from './pages/Statistics';
 import Admin from './pages/Admin';
+import AdminTenant from './pages/AdminTenant';
 import Archives from './pages/Archives';
 
 // Protected Route Component
@@ -27,6 +28,21 @@ function AdminRoute({ children }) {
   }
   
   if (user?.role !== 'global_admin') {
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+}
+
+// Tenant Admin Route Component
+function TenantAdminRoute({ children }) {
+  const user = authService.getCurrentUser();
+  
+  if (!authService.isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (user?.role !== 'tenant_admin' && user?.role !== 'global_admin') {
     return <Navigate to="/" replace />;
   }
   
@@ -85,6 +101,15 @@ function AppRouter() {
           <AdminRoute>
             <Admin />
           </AdminRoute>
+        }
+      />
+      
+      <Route
+        path="/admin-tenant"
+        element={
+          <TenantAdminRoute>
+            <AdminTenant />
+          </TenantAdminRoute>
         }
       />
       

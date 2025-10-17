@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService, callService } from '../services/api';
+import { authService, callService, adminService } from '../services/api';
 
 function App() {
   const navigate = useNavigate();
@@ -9,6 +9,14 @@ function App() {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // Tenant selection for global_admin
+  const [tenants, setTenants] = useState([]);
+  const [selectedTenant, setSelectedTenant] = useState(
+    user?.role === 'global_admin' 
+      ? localStorage.getItem('selectedTenantId') || 'all'
+      : null
+  );
+
   // Form state
   const [formData, setFormData] = useState({
     caller: '',
@@ -32,13 +40,41 @@ function App() {
   const [editingCall, setEditingCall] = useState(null);
 
   useEffect(() => {
+    if (user?.role === 'global_admin') {
+      loadTenants();
+    }
+  }, []);
+
+  useEffect(() => {
     loadCalls();
     loadSuggestions();
-  }, []);
+  }, [selectedTenant]);
+
+  const loadTenants = async () => {
+    try {
+      const response = await adminService.getTenants();
+      setTenants(response.data);
+    } catch (error) {
+      console.error('Error loading tenants:', error);
+    }
+  };
+
+  const handleTenantChange = (tenantId) => {
+    setSelectedTenant(tenantId);
+    if (tenantId === 'all') {
+      localStorage.removeItem('selectedTenantId');
+    } else {
+      localStorage.setItem('selectedTenantId', tenantId);
+    }
+  };
 
   const loadCalls = async () => {
     try {
-      const response = await callService.getCalls({ limit: 100 });
+      const params = { limit: 100 };
+      if (user?.role === 'global_admin' && selectedTenant && selectedTenant !== 'all') {
+        params.tenantId = selectedTenant;
+      }
+      const response = await callService.getCalls(params);
       setCalls(response.data);
     } catch (error) {
       console.error('Error loading calls:', error);
@@ -174,11 +210,33 @@ function App() {
               📦 Archives
             </button>
             {user?.role === 'global_admin' && (
+              <>
+                <select
+                  value={selectedTenant || 'all'}
+                  onChange={(e) => handleTenantChange(e.target.value)}
+                  className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">🌍 Tous les tenants</option>
+                  {tenants.map(tenant => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                >
+                  🛠️ Admin
+                </button>
+              </>
+            )}
+            {user?.role === 'tenant_admin' && (
               <button
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate('/admin-tenant')}
                 className="text-sm text-gray-600 hover:text-blue-600 font-medium"
               >
-                🛠️ Admin
+                👥 Admin Tenant
               </button>
             )}
             <span className="text-gray-300">|</span>
