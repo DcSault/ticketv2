@@ -3,8 +3,11 @@ const bcrypt = require('bcryptjs');
 
 // Obtenir tous les tenants
 exports.getTenants = async (req, res) => {
+  const userRole = req.user.role;
+  const userTenantId = req.user.tenantId;
+
   try {
-    const result = await pool.query(`
+    let query = `
       SELECT 
         t.*,
         COUNT(DISTINCT u.id) as user_count,
@@ -12,10 +15,20 @@ exports.getTenants = async (req, res) => {
       FROM tenants t
       LEFT JOIN users u ON t.id = u.tenant_id
       LEFT JOIN calls c ON t.id = c.tenant_id
-      GROUP BY t.id
-      ORDER BY t.name
-    `);
+    `;
+    
+    const params = [];
+    
+    // Seuls les tenant_admin sont restreints à leur tenant
+    if (userRole === 'tenant_admin') {
+      query += ' WHERE t.id = $1';
+      params.push(userTenantId);
+    }
+    // global_admin et tous les viewers voient tous les tenants
+    
+    query += ' GROUP BY t.id ORDER BY t.name';
 
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
     console.error('Get tenants error:', error);
