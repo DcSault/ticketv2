@@ -285,10 +285,10 @@ function AdminTenant() {
                 >
                   <option value="user">Utilisateur</option>
                   <option value="tenant_admin">Admin Tenant</option>
-                  <option value="viewer">Viewer (Lecture seule)</option>
+                  <option value="viewer">Viewer (Lecture seule - Multi-tenant)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Seuls les global_admin peuvent créer d'autres global_admin
+                  Le rôle Viewer a accès à tous les tenants en lecture seule
                 </p>
               </div>
 

@@ -157,8 +157,18 @@ exports.createUser = async (req, res) => {
     return res.status(403).json({ error: 'Tenant admin cannot create global admin' });
   }
 
-  // tenant_admin doit créer dans son propre tenant
-  const finalTenantId = userRole === 'tenant_admin' ? userTenantId : (tenantId || null);
+  // Déterminer le tenant_id selon le rôle créé
+  let finalTenantId;
+  if (role === 'viewer' || role === 'global_admin') {
+    // viewer et global_admin sont multi-tenant (tenant_id = NULL)
+    finalTenantId = null;
+  } else if (userRole === 'tenant_admin') {
+    // tenant_admin crée dans son propre tenant
+    finalTenantId = userTenantId;
+  } else {
+    // global_admin peut spécifier le tenant
+    finalTenantId = tenantId || null;
+  }
 
   try {
     // Si noPasswordLogin est true, utiliser un mot de passe vide haché
@@ -200,9 +210,9 @@ exports.updateUser = async (req, res) => {
       if (checkUser.rows[0].tenant_id !== userTenantId) {
         return res.status(403).json({ error: 'Cannot modify users from other tenants' });
       }
-      // tenant_admin ne peut pas modifier un global_admin
-      if (checkUser.rows[0].role === 'global_admin') {
-        return res.status(403).json({ error: 'Cannot modify global admin' });
+      // tenant_admin ne peut pas modifier un global_admin ou un viewer multi-tenant
+      if (checkUser.rows[0].role === 'global_admin' || checkUser.rows[0].role === 'viewer') {
+        return res.status(403).json({ error: 'Cannot modify global admin or viewer' });
       }
     }
 
@@ -228,9 +238,16 @@ exports.updateUser = async (req, res) => {
       updates.push(`role = $${paramCount}`);
       params.push(role);
       paramCount++;
+      
+      // Si on change le rôle vers viewer ou global_admin, mettre tenant_id à NULL
+      if (role === 'viewer' || role === 'global_admin') {
+        updates.push(`tenant_id = $${paramCount}`);
+        params.push(null);
+        paramCount++;
+      }
     }
 
-    if (tenantId !== undefined && userRole === 'global_admin') {
+    if (tenantId !== undefined && userRole === 'global_admin' && role !== 'viewer' && role !== 'global_admin') {
       updates.push(`tenant_id = $${paramCount}`);
       params.push(tenantId || null);
       paramCount++;
@@ -298,9 +315,9 @@ exports.deleteUser = async (req, res) => {
     if (checkUser.rows[0].tenant_id !== userTenantId) {
       return res.status(403).json({ error: 'Cannot delete users from other tenants' });
     }
-    // tenant_admin ne peut pas supprimer un global_admin
-    if (checkUser.rows[0].role === 'global_admin') {
-      return res.status(403).json({ error: 'Cannot delete global admin' });
+    // tenant_admin ne peut pas supprimer un global_admin ou un viewer multi-tenant
+    if (checkUser.rows[0].role === 'global_admin' || checkUser.rows[0].role === 'viewer') {
+      return res.status(403).json({ error: 'Cannot delete global admin or viewer' });
     }
   }
 
