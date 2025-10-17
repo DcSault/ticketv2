@@ -99,6 +99,16 @@ function Admin() {
             👥 Utilisateurs
           </button>
           <button
+            onClick={() => setActiveTab('import')}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              activeTab === 'import'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            📥 Import Appels
+          </button>
+          <button
             onClick={() => setActiveTab('statistics')}
             className={`px-4 py-2 font-medium border-b-2 transition-colors ${
               activeTab === 'statistics'
@@ -166,6 +176,13 @@ function Admin() {
               />
             )}
 
+            {activeTab === 'import' && (
+              <ImportTab tenants={tenants} loadTenants={async () => {
+                const response = await adminService.getTenants();
+                setTenants(response.data);
+              }} />
+            )}
+
             {activeTab === 'statistics' && globalStats && (
               <StatisticsTab stats={globalStats} />
             )}
@@ -214,6 +231,191 @@ function Admin() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+// Tab Import
+function ImportTab({ tenants, loadTenants }) {
+  const [selectedTenant, setSelectedTenant] = useState('');
+  const [file, setFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (tenants.length === 0) {
+      loadTenants();
+    }
+  }, []);
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      if (selectedFile.type !== 'application/json') {
+        alert('Veuillez sélectionner un fichier JSON');
+        return;
+      }
+      setFile(selectedFile);
+      setResult(null);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!file || !selectedTenant) {
+      alert('Veuillez sélectionner un tenant et un fichier JSON');
+      return;
+    }
+
+    setImporting(true);
+    setResult(null);
+
+    try {
+      // Lire le fichier JSON
+      const fileContent = await file.text();
+      const calls = JSON.parse(fileContent);
+
+      if (!Array.isArray(calls)) {
+        throw new Error('Le fichier JSON doit contenir un tableau d\'appels');
+      }
+
+      // Importer les appels via l'API
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('tenantId', selectedTenant);
+
+      const response = await adminService.importCalls(formData);
+      
+      setResult({
+        success: true,
+        message: `${response.data.imported} appel(s) importé(s) avec succès`,
+        details: response.data
+      });
+      
+      // Réinitialiser le formulaire
+      setFile(null);
+      setSelectedTenant('');
+      document.getElementById('file-input').value = '';
+      
+    } catch (error) {
+      console.error('Import error:', error);
+      setResult({
+        success: false,
+        message: error.response?.data?.error || error.message || 'Erreur lors de l\'import'
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  return (
+    <div className="card">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Importer des Appels (JSON)</h2>
+      
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <h3 className="font-semibold text-blue-900 mb-2">ℹ️ Format attendu :</h3>
+        <p className="text-sm text-blue-800 mb-2">
+          Le fichier JSON doit contenir un tableau d'objets avec les champs suivants :
+        </p>
+        <pre className="bg-white p-3 rounded text-xs overflow-x-auto">
+{`[
+  {
+    "caller": "Nom de l'appelant",
+    "reason": "Raison de l'appel",
+    "tags": [{"name": "tag1"}, {"name": "tag2"}],
+    "isBlocking": false,
+    "isGLPI": false,
+    "glpiNumber": "",
+    "createdAt": "2024-01-01T10:00:00.000Z"
+  }
+]`}
+        </pre>
+      </div>
+
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Sélectionner le tenant de destination *
+          </label>
+          <select
+            className="input"
+            value={selectedTenant}
+            onChange={(e) => setSelectedTenant(e.target.value)}
+            disabled={importing}
+          >
+            <option value="">-- Choisir un tenant --</option>
+            {tenants.map((tenant) => (
+              <option key={tenant.id} value={tenant.id}>
+                {tenant.display_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Fichier JSON *
+          </label>
+          <input
+            id="file-input"
+            type="file"
+            accept=".json,application/json"
+            onChange={handleFileChange}
+            disabled={importing}
+            className="block w-full text-sm text-gray-600
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-lg file:border-0
+              file:text-sm file:font-semibold
+              file:bg-blue-50 file:text-blue-700
+              hover:file:bg-blue-100
+              cursor-pointer"
+          />
+          {file && (
+            <p className="mt-2 text-sm text-gray-600">
+              📄 Fichier sélectionné : <span className="font-medium">{file.name}</span>
+            </p>
+          )}
+        </div>
+
+        <button
+          onClick={handleImport}
+          disabled={!file || !selectedTenant || importing}
+          className="btn btn-primary w-full"
+        >
+          {importing ? '⏳ Import en cours...' : '📥 Importer les appels'}
+        </button>
+
+        {result && (
+          <div className={`p-4 rounded-lg ${
+            result.success 
+              ? 'bg-green-50 border border-green-200' 
+              : 'bg-red-50 border border-red-200'
+          }`}>
+            <p className={`font-semibold ${
+              result.success ? 'text-green-900' : 'text-red-900'
+            }`}>
+              {result.success ? '✅ ' : '❌ '}{result.message}
+            </p>
+            {result.details && (
+              <div className="mt-2 text-sm text-gray-700">
+                <p>• Appels importés : {result.details.imported}</p>
+                {result.details.skipped > 0 && (
+                  <p>• Appels ignorés : {result.details.skipped}</p>
+                )}
+                {result.details.errors?.length > 0 && (
+                  <div className="mt-2">
+                    <p className="font-medium">Erreurs :</p>
+                    <ul className="list-disc list-inside">
+                      {result.details.errors.map((err, idx) => (
+                        <li key={idx}>{err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

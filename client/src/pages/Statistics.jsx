@@ -35,28 +35,7 @@ function Statistics() {
     }
   };
 
-  const handleExport = async () => {
-    try {
-      const params = {};
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
 
-      const response = await statisticsService.exportData(params);
-      
-      // Télécharger le JSON
-      const dataStr = JSON.stringify(response.data, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `export-calls-${new Date().toISOString().split('T')[0]}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting data:', error);
-      alert('Erreur lors de l\'export');
-    }
-  };
 
   if (loading && !stats) {
     return (
@@ -100,7 +79,7 @@ function Statistics() {
         <div className="card mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Filtres</h2>
           
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Période
@@ -143,15 +122,6 @@ function Statistics() {
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
               />
-            </div>
-
-            <div className="flex items-end">
-              <button
-                onClick={handleExport}
-                className="btn btn-primary w-full"
-              >
-                📥 Exporter JSON
-              </button>
             </div>
           </div>
         </div>

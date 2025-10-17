@@ -88,6 +88,15 @@ export const adminService = {
   updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
 
+  // Import
+  importCalls: (formData) => {
+    return api.post('/admin/import-calls', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
+
   // Statistics
   getGlobalStatistics: () => api.get('/admin/statistics')
 };

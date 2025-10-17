@@ -291,3 +291,144 @@ exports.getGlobalStatistics = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+// Importer des appels depuis un fichier JSON
+exports.importCalls = async (req, res) => {
+  const { tenantId } = req.body;
+  const userId = req.user.id;
+
+  if (!tenantId) {
+    return res.status(400).json({ error: 'Tenant ID is required' });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'JSON file is required' });
+  }
+
+  try {
+    // Vérifier que le tenant existe
+    const tenantCheck = await pool.query('SELECT id FROM tenants WHERE id = $1', [tenantId]);
+    if (tenantCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    // Lire et parser le fichier JSON
+    const fileContent = req.file.buffer.toString('utf-8');
+    const calls = JSON.parse(fileContent);
+
+    if (!Array.isArray(calls)) {
+      return res.status(400).json({ error: 'JSON must contain an array of calls' });
+    }
+
+    let imported = 0;
+    let skipped = 0;
+    const errors = [];
+
+    // Importer chaque appel
+    for (const call of calls) {
+      try {
+        const {
+          caller,
+          reason,
+          tags = [],
+          isBlocking = false,
+          isGLPI = false,
+          glpiNumber = '',
+          createdAt
+        } = call;
+
+        if (!caller) {
+          errors.push(`Appel ignoré : caller manquant`);
+          skipped++;
+          continue;
+        }
+
+        // Créer l'appel
+        const callResult = await pool.query(
+          `INSERT INTO calls (
+            tenant_id, caller_name, reason_name, is_blocking, is_glpi, glpi_number,
+            created_by, last_modified_by, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+          [
+            tenantId,
+            caller,
+            reason || null,
+            isBlocking,
+            isGLPI,
+            glpiNumber || null,
+            userId,
+            userId,
+            createdAt || new Date()
+          ]
+        );
+
+        const callId = callResult.rows[0].id;
+
+        // Ajouter les tags si présents
+        if (Array.isArray(tags) && tags.length > 0) {
+          for (const tag of tags) {
+            if (tag.name) {
+              // Créer ou récupérer le tag
+              let tagId;
+              const existingTag = await pool.query(
+                'SELECT id FROM tags WHERE tenant_id = $1 AND name = $2',
+                [tenantId, tag.name]
+              );
+
+              if (existingTag.rows.length > 0) {
+                tagId = existingTag.rows[0].id;
+              } else {
+                const newTag = await pool.query(
+                  'INSERT INTO tags (tenant_id, name) VALUES ($1, $2) RETURNING id',
+                  [tenantId, tag.name]
+                );
+                tagId = newTag.rows[0].id;
+              }
+
+              // Associer le tag à l'appel
+              await pool.query(
+                'INSERT INTO call_tags (call_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                [callId, tagId]
+              );
+            }
+          }
+        }
+
+        // Ajouter aux tables d'autocomplétion si nécessaire
+        if (caller) {
+          await pool.query(
+            'INSERT INTO callers (tenant_id, name) VALUES ($1, $2) ON CONFLICT (tenant_id, name) DO NOTHING',
+            [tenantId, caller]
+          );
+        }
+
+        if (reason) {
+          await pool.query(
+            'INSERT INTO reasons (tenant_id, name) VALUES ($1, $2) ON CONFLICT (tenant_id, name) DO NOTHING',
+            [tenantId, reason]
+          );
+        }
+
+        imported++;
+      } catch (error) {
+        console.error('Import call error:', error);
+        errors.push(`Erreur pour l'appel "${call.caller || 'unknown'}": ${error.message}`);
+        skipped++;
+      }
+    }
+
+    res.json({
+      message: 'Import completed',
+      imported,
+      skipped,
+      total: calls.length,
+      errors: errors.length > 0 ? errors.slice(0, 10) : undefined // Limiter à 10 erreurs
+    });
+  } catch (error) {
+    console.error('Import calls error:', error);
+    if (error instanceof SyntaxError) {
+      return res.status(400).json({ error: 'Invalid JSON format' });
+    }
+    res.status(500).json({ error: 'Server error' });
+  }
+};
