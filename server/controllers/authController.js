@@ -19,10 +19,16 @@ exports.login = async (req, res) => {
 
     const user = result.rows[0];
 
-    // Vérifier le mot de passe
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    // Si l'utilisateur a le flag no_password_login, ne pas vérifier le mot de passe
+    if (!user.no_password_login) {
+      // Vérifier le mot de passe uniquement si no_password_login est false
+      if (!password) {
+        return res.status(401).json({ error: 'Password required' });
+      }
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
     }
 
     // Créer le token JWT
@@ -85,4 +91,29 @@ exports.getCurrentUser = async (req, res) => {
 // Logout (côté client principalement)
 exports.logout = (req, res) => {
   res.json({ message: 'Logged out successfully' });
+};
+
+// Vérifier si un utilisateur nécessite un mot de passe
+exports.checkUserPasswordRequired = async (req, res) => {
+  const { username } = req.params;
+
+  try {
+    const result = await pool.query(
+      'SELECT no_password_login FROM users WHERE username = $1',
+      [username]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ exists: false, passwordRequired: true });
+    }
+
+    const user = result.rows[0];
+    res.json({ 
+      exists: true, 
+      passwordRequired: !user.no_password_login 
+    });
+  } catch (error) {
+    console.error('Check user error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 };

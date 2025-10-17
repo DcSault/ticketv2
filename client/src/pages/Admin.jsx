@@ -723,7 +723,8 @@ function UserModal({ user, tenants, onClose, onSave }) {
     password: '',
     fullName: user?.full_name || '',
     role: user?.role || 'user',
-    tenantId: user?.tenant_id || ''
+    tenantId: user?.tenant_id || '',
+    noPasswordLogin: user?.no_password_login || false
   });
 
   const handleSubmit = (e) => {
@@ -756,18 +757,37 @@ function UserModal({ user, tenants, onClose, onSave }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Mot de passe {!user && '*'}
+            <label className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                checked={formData.noPasswordLogin}
+                onChange={(e) => setFormData({ ...formData, noPasswordLogin: e.target.checked })}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                🔓 Connexion sans mot de passe
+              </span>
             </label>
-            <input
-              type="password"
-              className="input"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required={!user}
-              placeholder={user ? 'Laisser vide pour ne pas changer' : ''}
-            />
+            <p className="text-xs text-gray-500 ml-6 mb-3">
+              L'utilisateur pourra se connecter uniquement avec son nom d'utilisateur
+            </p>
           </div>
+
+          {!formData.noPasswordLogin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mot de passe {!user && '*'}
+              </label>
+              <input
+                type="password"
+                className="input"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required={!user && !formData.noPasswordLogin}
+                placeholder={user ? 'Laisser vide pour ne pas changer' : ''}
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

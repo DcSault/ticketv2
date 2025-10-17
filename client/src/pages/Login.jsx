@@ -1,11 +1,42 @@
 import React, { useState } from 'react';
 import { authService } from '../services/api';
+import axios from 'axios';
 
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [passwordRequired, setPasswordRequired] = useState(true);
+  const [userChecked, setUserChecked] = useState(false);
+
+  const checkUserPasswordRequired = async (usernameValue) => {
+    if (!usernameValue) {
+      setPasswordRequired(true);
+      setUserChecked(false);
+      return;
+    }
+
+    try {
+      const response = await axios.get(`/api/auth/check-user/${usernameValue}`);
+      setPasswordRequired(response.data.passwordRequired);
+      setUserChecked(response.data.exists);
+    } catch (err) {
+      console.error('Error checking user:', err);
+      setPasswordRequired(true);
+      setUserChecked(false);
+    }
+  };
+
+  const handleUsernameChange = (e) => {
+    const value = e.target.value;
+    setUsername(value);
+    // Vérifier après un court délai pour éviter trop de requêtes
+    if (value) {
+      const timeoutId = setTimeout(() => checkUserPasswordRequired(value), 500);
+      return () => clearTimeout(timeoutId);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -13,7 +44,7 @@ function Login() {
     setLoading(true);
 
     try {
-      await authService.login(username, password);
+      await authService.login(username, passwordRequired ? password : '');
       window.location.href = '/';
     } catch (err) {
       setError(err.response?.data?.error || 'Erreur de connexion');
@@ -46,25 +77,32 @@ function Login() {
               type="text"
               className="input"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={handleUsernameChange}
               required
               autoFocus
             />
+            {userChecked && !passwordRequired && (
+              <p className="text-xs text-green-600 mt-1">
+                🔓 Connexion sans mot de passe activée
+              </p>
+            )}
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Mot de passe
-            </label>
-            <input
-              id="password"
-              type="password"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+          {passwordRequired && (
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Mot de passe
+              </label>
+              <input
+                id="password"
+                type="password"
+                className="input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          )}
 
           <button
             type="submit"

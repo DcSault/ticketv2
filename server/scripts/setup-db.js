@@ -26,6 +26,7 @@ async function setupDatabase() {
         full_name VARCHAR(200),
         role VARCHAR(20) DEFAULT 'user', -- user, tenant_admin, global_admin
         tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+        no_password_login BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 

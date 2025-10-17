@@ -127,10 +127,14 @@ exports.getUsers = async (req, res) => {
 
 // Créer un utilisateur
 exports.createUser = async (req, res) => {
-  const { username, password, fullName, role, tenantId } = req.body;
+  const { username, password, fullName, role, tenantId, noPasswordLogin } = req.body;
 
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
+  if (!username) {
+    return res.status(400).json({ error: 'Username is required' });
+  }
+
+  if (!noPasswordLogin && !password) {
+    return res.status(400).json({ error: 'Password is required when noPasswordLogin is false' });
   }
 
   if (!['user', 'tenant_admin', 'global_admin'].includes(role)) {
@@ -138,13 +142,16 @@ exports.createUser = async (req, res) => {
   }
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Si noPasswordLogin est true, utiliser un mot de passe vide haché
+    const hashedPassword = noPasswordLogin 
+      ? await bcrypt.hash('', 10) 
+      : await bcrypt.hash(password, 10);
 
     const result = await pool.query(
-      `INSERT INTO users (username, password, full_name, role, tenant_id)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, username, full_name, role, tenant_id, created_at`,
-      [username, hashedPassword, fullName, role, tenantId || null]
+      `INSERT INTO users (username, password, full_name, role, tenant_id, no_password_login)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, username, full_name, role, tenant_id, no_password_login, created_at`,
+      [username, hashedPassword, fullName, role, tenantId || null, noPasswordLogin || false]
     );
 
     res.status(201).json(result.rows[0]);
@@ -189,7 +196,21 @@ exports.updateUser = async (req, res) => {
       paramCount++;
     }
 
-    if (password) {
+    if (req.body.noPasswordLogin !== undefined) {
+      updates.push(`no_password_login = $${paramCount}`);
+      params.push(req.body.noPasswordLogin);
+      paramCount++;
+      
+      // Si on active no_password_login, mettre un mot de passe vide
+      if (req.body.noPasswordLogin) {
+        const hashedPassword = await bcrypt.hash('', 10);
+        updates.push(`password = $${paramCount}`);
+        params.push(hashedPassword);
+        paramCount++;
+      }
+    }
+
+    if (password && !req.body.noPasswordLogin) {
       const hashedPassword = await bcrypt.hash(password, 10);
       updates.push(`password = $${paramCount}`);
       params.push(hashedPassword);
@@ -201,7 +222,7 @@ exports.updateUser = async (req, res) => {
     }
 
     query += ' ' + updates.join(', ');
-    query += ` WHERE id = $${paramCount} RETURNING id, username, full_name, role, tenant_id, created_at`;
+    query += ` WHERE id = $${paramCount} RETURNING id, username, full_name, role, tenant_id, no_password_login, created_at`;
     params.push(id);
 
     const result = await pool.query(query, params);
