@@ -203,7 +203,7 @@ function App() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
-              className="text-2xl font-bold text-gray-800 hover:text-blue-600"
+              className="text-2xl font-bold text-gray-800 hover:text-green-700"
             >
               ← CallFixV2
             </button>
@@ -213,13 +213,13 @@ function App() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/statistics')}
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+              className="text-sm text-gray-600 hover:text-green-700 font-medium"
             >
               Statistiques
             </button>
             <button
               onClick={() => navigate('/archives')}
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+              className="text-sm text-gray-600 hover:text-green-700 font-medium"
             >
               Archives
             </button>
@@ -227,7 +227,7 @@ function App() {
               <select
                 value={selectedTenant || 'all'}
                 onChange={(e) => handleTenantChange(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-green-600"
               >
                 <option value="all">Tous les tenants</option>
                 {tenants.map(tenant => (
@@ -240,7 +240,7 @@ function App() {
             {user?.role === 'global_admin' && (
               <button
                 onClick={() => navigate('/admin')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                className="text-sm text-gray-600 hover:text-green-700 font-medium"
               >
                 🛠️ Admin
               </button>
@@ -248,7 +248,7 @@ function App() {
             {user?.role === 'tenant_admin' && (
               <button
                 onClick={() => navigate('/admin-tenant')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                className="text-sm text-gray-600 hover:text-green-700 font-medium"
               >
                 👥 Admin Tenant
               </button>
@@ -271,16 +271,7 @@ function App() {
         {/* Form - Hidden for viewers */}
         {user?.role !== 'viewer' && (
         <div className="card mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Nouvel Appel</h2>
-            <button
-              type="button"
-              onClick={() => setShowQuickForm(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
-            >
-              Ajout Rapide
-            </button>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Nouvel Appel</h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
@@ -372,13 +363,13 @@ function App() {
                   {formData.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="hover:text-blue-600"
+                        className="hover:text-green-700"
                       >
                         ×
                       </button>
@@ -482,7 +473,7 @@ function App() {
             </h2>
             <button
               onClick={() => navigate('/archives')}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              className="text-sm text-green-700 hover:text-green-800 font-medium"
             >
               📦 Voir les appels précédents
             </button>
@@ -497,7 +488,7 @@ function App() {
                 Les appels des jours précédents sont dans les{' '}
                 <button
                   onClick={() => navigate('/archives')}
-                  className="text-blue-600 hover:underline font-medium"
+                  className="text-green-700 hover:underline font-medium"
                 >
                   Archives
                 </button>
@@ -613,7 +604,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
 
   if (isEditing) {
     return (
-      <div className="border border-gray-300 rounded-lg p-4 bg-blue-50">
+      <div className="border border-gray-300 rounded-lg p-4 bg-green-50">
         <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Date/Heure</label>
@@ -708,13 +699,13 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
                   editData.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="hover:text-blue-600"
+                        className="hover:text-green-700"
                       >
                         ×
                       </button>
@@ -873,7 +864,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
         <div className="flex gap-2">
           <button
             onClick={onEdit}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            className="text-green-700 hover:text-green-800 text-sm font-medium"
           >
             Modifier
           </button>
