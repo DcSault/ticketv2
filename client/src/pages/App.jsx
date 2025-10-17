@@ -393,14 +393,33 @@ function App() {
 
         {/* Liste des appels */}
         <div className="card">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            Historique des appels ({calls.length})
-          </h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">
+              Appels d'aujourd'hui ({calls.length})
+            </h2>
+            <button
+              onClick={() => navigate('/archives')}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              📦 Voir les appels précédents
+            </button>
+          </div>
 
           {loading ? (
             <p className="text-gray-600">Chargement...</p>
           ) : calls.length === 0 ? (
-            <p className="text-gray-600">Aucun appel enregistré</p>
+            <div className="text-center py-8">
+              <p className="text-gray-600 mb-2">Aucun appel aujourd'hui</p>
+              <p className="text-sm text-gray-500">
+                Les appels des jours précédents sont dans les{' '}
+                <button
+                  onClick={() => navigate('/archives')}
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  Archives
+                </button>
+              </p>
+            </div>
           ) : (
             <div className="space-y-4">
               {calls.map((call) => (

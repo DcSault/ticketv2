@@ -24,15 +24,13 @@ exports.getCalls = async (req, res) => {
       WHERE 1=1
     `;
 
-    // Filtre sur is_archived selon le paramètre
+    // Filtre selon le paramètre archived
     if (archived === 'true') {
-      query += ' AND c.is_archived = true';
-    } else if (archived === 'false') {
-      query += ' AND c.is_archived = false';
-    }
-    // Si archived n'est pas spécifié, on retourne tous les appels (par défaut: non archivés)
-    else {
-      query += ' AND c.is_archived = false';
+      // Archives : tous les appels AVANT aujourd'hui
+      query += ' AND DATE(c.created_at) < CURRENT_DATE';
+    } else {
+      // Application : uniquement les appels d'AUJOURD'HUI
+      query += ' AND DATE(c.created_at) = CURRENT_DATE';
     }
 
     const params = [];

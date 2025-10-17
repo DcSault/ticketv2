@@ -174,7 +174,14 @@ function Archives() {
 
       {/* Contenu */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">📦 Appels archivés</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-4">📦 Appels archivés</h1>
+        
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-blue-800">
+            ℹ️ <strong>Archives automatiques :</strong> Cette page affiche tous les appels créés <strong>avant aujourd'hui</strong>. 
+            Les appels d'aujourd'hui sont visibles dans l'application principale.
+          </p>
+        </div>
 
         {/* Filtres */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
@@ -333,14 +340,6 @@ function Archives() {
                         <span className="text-sm text-gray-500 capitalize">
                           {getDayName(call.created_at)}
                         </span>
-                        {call.archived_at && (
-                          <>
-                            <span className="text-sm text-gray-400">•</span>
-                            <span className="text-xs text-gray-500">
-                              Archivé le {formatDate(call.archived_at)}
-                            </span>
-                          </>
-                        )}
                         {call.is_blocking && (
                           <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
                             Bloquant
