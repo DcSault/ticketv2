@@ -489,3 +489,60 @@ exports.getSuggestions = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+// Obtenir les suggestions rapides (triées par fréquence d'utilisation)
+exports.getQuickSuggestions = async (req, res) => {
+  const tenantId = req.user.tenantId;
+
+  try {
+    // Top 5 appelants les plus fréquents des 30 derniers jours
+    const callersResult = await pool.query(
+      `SELECT caller_name as name, COUNT(*) as count
+       FROM calls
+       WHERE tenant_id = $1 
+       AND caller_name IS NOT NULL
+       AND created_at >= NOW() - INTERVAL '30 days'
+       GROUP BY caller_name
+       ORDER BY count DESC
+       LIMIT 5`,
+      [tenantId]
+    );
+
+    // Top 5 raisons les plus fréquentes des 30 derniers jours (hors GLPI)
+    const reasonsResult = await pool.query(
+      `SELECT reason_name as name, COUNT(*) as count
+       FROM calls
+       WHERE tenant_id = $1 
+       AND reason_name IS NOT NULL
+       AND is_glpi = false
+       AND created_at >= NOW() - INTERVAL '30 days'
+       GROUP BY reason_name
+       ORDER BY count DESC
+       LIMIT 5`,
+      [tenantId]
+    );
+
+    // Top 10 tags les plus fréquents des 30 derniers jours
+    const tagsResult = await pool.query(
+      `SELECT t.name, COUNT(*) as count
+       FROM call_tags ct
+       JOIN tags t ON ct.tag_id = t.id
+       JOIN calls c ON ct.call_id = c.id
+       WHERE c.tenant_id = $1
+       AND c.created_at >= NOW() - INTERVAL '30 days'
+       GROUP BY t.name
+       ORDER BY count DESC
+       LIMIT 10`,
+      [tenantId]
+    );
+
+    res.json({
+      callers: callersResult.rows.map(row => row.name),
+      reasons: reasonsResult.rows.map(row => row.name),
+      tags: tagsResult.rows.map(row => row.name)
+    });
+  } catch (error) {
+    console.error('Get quick suggestions error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};;

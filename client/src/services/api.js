@@ -67,7 +67,8 @@ export const callService = {
   deleteCall: (id) => api.delete(`/calls/${id}`),
   archiveCall: (id) => api.post(`/calls/${id}/archive`),
   unarchiveCall: (id) => api.post(`/calls/${id}/unarchive`),
-  getSuggestions: (type) => api.get(`/calls/suggestions/${type}`)
+  getSuggestions: (type) => api.get(`/calls/suggestions/${type}`),
+  getQuickSuggestions: () => api.get('/calls/quick-suggestions')
 };
 
 // Statistics

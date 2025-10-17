@@ -10,6 +10,7 @@ router.use(ensureTenantAccess);
 // Routes de lecture (accessibles aux viewers)
 router.get('/', callController.getCalls);
 router.get('/suggestions/:type', callController.getSuggestions);
+router.get('/quick-suggestions', callController.getQuickSuggestions);
 
 // Routes de modification (bloquées pour les viewers)
 router.post('/', blockViewerModifications, callController.createCall);
