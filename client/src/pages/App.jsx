@@ -420,10 +420,15 @@ function App() {
 
 // Composant pour un appel
 function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, formatDate, getDayName }) {
+  // Parser les tags correctement dès l'initialisation
+  const initialTags = (call.tags && Array.isArray(call.tags)) 
+    ? call.tags.filter(t => t && t.name).map(t => t.name) 
+    : [];
+  
   const [editData, setEditData] = useState({
     caller: call.caller_name,
     reason: call.reason_name || '',
-    tags: call.tags?.filter(t => t).map(t => t.name) || [],
+    tags: initialTags,
     isGlpi: call.is_glpi,
     glpiNumber: call.glpi_number || '',
     isBlocking: call.is_blocking,
@@ -441,10 +446,21 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, formatD
   // Réinitialiser editData quand on passe en mode édition
   useEffect(() => {
     if (isEditing) {
+      // Parser les tags correctement
+      let parsedTags = [];
+      if (call.tags && Array.isArray(call.tags)) {
+        parsedTags = call.tags
+          .filter(t => t && t.name) // Filtrer les null/undefined et ceux sans nom
+          .map(t => t.name);
+      }
+      
+      console.log('🏷️ Tags reçus:', call.tags);
+      console.log('🏷️ Tags parsés:', parsedTags);
+      
       setEditData({
         caller: call.caller_name,
         reason: call.reason_name || '',
-        tags: call.tags?.filter(t => t).map(t => t.name) || [],
+        tags: parsedTags,
         isGlpi: call.is_glpi,
         glpiNumber: call.glpi_number || '',
         isBlocking: call.is_blocking,
