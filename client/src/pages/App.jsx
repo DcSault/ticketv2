@@ -79,8 +79,9 @@ function App() {
         isBlocking: false
       });
       
-      // Reload suggestions
-      loadSuggestions();
+      // Reload suggestions et appels pour voir les nouveaux dans les stats
+      await loadSuggestions();
+      await loadCalls();
     } catch (error) {
       console.error('Error creating call:', error);
       alert('Erreur lors de la création de l\'appel');
@@ -92,6 +93,9 @@ function App() {
       const response = await callService.updateCall(id, updates);
       setCalls(calls.map(call => call.id === id ? response.data : call));
       setEditingCall(null);
+      
+      // Reload suggestions pour mettre à jour l'autocomplétion
+      await loadSuggestions();
     } catch (error) {
       console.error('Error updating call:', error);
       alert('Erreur lors de la modification');
@@ -402,11 +406,58 @@ function App() {
 // Composant pour un appel
 function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, formatDate, getDayName }) {
   const [editData, setEditData] = useState({
-    caller_name: call.caller_name,
-    reason_name: call.reason_name || '',
+    caller: call.caller_name,
+    reason: call.reason_name || '',
     tags: call.tags?.filter(t => t).map(t => t.name) || [],
-    created_at: call.created_at
+    isGlpi: call.is_glpi,
+    glpiNumber: call.glpi_number || '',
+    isBlocking: call.is_blocking,
+    createdAt: call.created_at
   });
+
+  const [callerSuggestions, setCallerSuggestions] = useState([]);
+  const [reasonSuggestions, setReasonSuggestions] = useState([]);
+  const [tagSuggestions, setTagSuggestions] = useState([]);
+  const [showCallerSuggestions, setShowCallerSuggestions] = useState(false);
+  const [showReasonSuggestions, setShowReasonSuggestions] = useState(false);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [currentTag, setCurrentTag] = useState('');
+
+  useEffect(() => {
+    if (isEditing) {
+      loadSuggestions();
+    }
+  }, [isEditing]);
+
+  const loadSuggestions = async () => {
+    try {
+      const [callers, reasons, tags] = await Promise.all([
+        callService.getSuggestions('callers'),
+        callService.getSuggestions('reasons'),
+        callService.getSuggestions('tags')
+      ]);
+      setCallerSuggestions(callers.data);
+      setReasonSuggestions(reasons.data);
+      setTagSuggestions(tags.data);
+    } catch (error) {
+      console.error('Error loading suggestions:', error);
+    }
+  };
+
+  const addTag = (tag) => {
+    if (tag && !editData.tags.includes(tag)) {
+      setEditData({ ...editData, tags: [...editData.tags, tag] });
+    }
+    setCurrentTag('');
+    setShowTagSuggestions(false);
+  };
+
+  const removeTag = (tagToRemove) => {
+    setEditData({
+      ...editData,
+      tags: editData.tags.filter(tag => tag !== tagToRemove)
+    });
+  };
 
   if (isEditing) {
     return (
@@ -417,30 +468,186 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, formatD
             <input
               type="datetime-local"
               className="input text-sm"
-              value={new Date(editData.created_at).toISOString().slice(0, 16)}
-              onChange={(e) => setEditData({ ...editData, created_at: e.target.value })}
+              value={new Date(editData.createdAt).toISOString().slice(0, 16)}
+              onChange={(e) => setEditData({ ...editData, createdAt: e.target.value })}
             />
           </div>
-          <div>
+          
+          {/* Appelant avec autocomplétion */}
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">Appelant</label>
             <input
               type="text"
               className="input text-sm"
-              value={editData.caller_name}
-              onChange={(e) => setEditData({ ...editData, caller_name: e.target.value })}
+              value={editData.caller}
+              onChange={(e) => {
+                setEditData({ ...editData, caller: e.target.value });
+                setShowCallerSuggestions(true);
+              }}
+              onFocus={() => setShowCallerSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowCallerSuggestions(false), 200)}
             />
+            {showCallerSuggestions && callerSuggestions.length > 0 && editData.caller && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                {callerSuggestions
+                  .filter(s => s.toLowerCase().includes(editData.caller.toLowerCase()))
+                  .map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                      onClick={() => {
+                        setEditData({ ...editData, caller: suggestion });
+                        setShowCallerSuggestions(false);
+                      }}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
-          {!call.is_glpi && (
-            <div>
+
+          {/* Raison avec autocomplétion */}
+          {!editData.isGlpi && (
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">Raison</label>
               <input
                 type="text"
                 className="input text-sm"
-                value={editData.reason_name}
-                onChange={(e) => setEditData({ ...editData, reason_name: e.target.value })}
+                value={editData.reason}
+                onChange={(e) => {
+                  setEditData({ ...editData, reason: e.target.value });
+                  setShowReasonSuggestions(true);
+                }}
+                onFocus={() => setShowReasonSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowReasonSuggestions(false), 200)}
+              />
+              {showReasonSuggestions && reasonSuggestions.length > 0 && editData.reason && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                  {reasonSuggestions
+                    .filter(s => s.toLowerCase().includes(editData.reason.toLowerCase()))
+                    .map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                        onClick={() => {
+                          setEditData({ ...editData, reason: suggestion });
+                          setShowReasonSuggestions(false);
+                        }}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tags avec autocomplétion */}
+          {!editData.isGlpi && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {editData.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="hover:text-blue-600"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  className="input text-sm"
+                  value={currentTag}
+                  onChange={(e) => {
+                    setCurrentTag(e.target.value);
+                    setShowTagSuggestions(true);
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTag(currentTag);
+                    }
+                  }}
+                  onFocus={() => setShowTagSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
+                  placeholder="Ajouter un tag..."
+                />
+                {showTagSuggestions && tagSuggestions.length > 0 && currentTag && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                    {tagSuggestions
+                      .filter(s => s.toLowerCase().includes(currentTag.toLowerCase()))
+                      .map((suggestion, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                          onClick={() => addTag(suggestion)}
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Checkboxes */}
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editData.isGlpi}
+                onChange={(e) => setEditData({ 
+                  ...editData, 
+                  isGlpi: e.target.checked,
+                  reason: e.target.checked ? '' : editData.reason,
+                  tags: e.target.checked ? [] : editData.tags
+                })}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium text-gray-700">Ticket GLPI</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editData.isBlocking}
+                onChange={(e) => setEditData({ ...editData, isBlocking: e.target.checked })}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium text-gray-700">Bloquant</span>
+            </label>
+          </div>
+
+          {editData.isGlpi && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Numéro GLPI
+              </label>
+              <input
+                type="text"
+                className="input text-sm"
+                value={editData.glpiNumber}
+                onChange={(e) => setEditData({ ...editData, glpiNumber: e.target.value })}
+                placeholder="Ex: GLPI-12345"
               />
             </div>
           )}
+
           <div className="flex gap-2">
             <button
               onClick={() => onSave(editData)}
