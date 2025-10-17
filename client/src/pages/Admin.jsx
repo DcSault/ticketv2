@@ -56,7 +56,7 @@ function Admin() {
               onClick={() => navigate('/')}
               className="text-2xl font-bold text-gray-800 hover:text-blue-600"
             >
-              ← TicketV2
+              ← CallFixV2
             </button>
             <span className="text-gray-300">|</span>
             <span className="text-gray-600">Administration</span>
@@ -322,7 +322,7 @@ function ImportTab({ tenants, loadTenants }) {
         
         <div className="space-y-3">
           <div>
-            <p className="text-sm font-medium text-blue-800 mb-1">✅ Format nouveau (TicketV2) :</p>
+            <p className="text-sm font-medium text-blue-800 mb-1">✅ Format nouveau (CallFixV2) :</p>
             <pre className="bg-white p-3 rounded text-xs overflow-x-auto">
 {`[
   {

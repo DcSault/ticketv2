@@ -166,7 +166,7 @@ function Archives() {
               onClick={() => navigate('/')}
               className="text-2xl font-bold text-gray-800 hover:text-blue-600"
             >
-              ← TicketV2
+              ← CallFixV2
             </button>
             <span className="text-gray-300">|</span>
             <span className="text-gray-600">Archives</span>
