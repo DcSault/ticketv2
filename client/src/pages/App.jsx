@@ -157,7 +157,7 @@ function App() {
     try {
       await callService.archiveCall(id);
       setCalls(calls.filter(call => call.id !== id));
-      alert('Appel archivé avec succès');
+      alert('✅ Appel archivé avec succès');
     } catch (error) {
       console.error('Error archiving call:', error);
       alert('Erreur lors de l\'archivage');
@@ -196,10 +196,10 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-um-olive-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md shadow-lg border-b border-um-olive-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
@@ -242,7 +242,7 @@ function App() {
                 onClick={() => navigate('/admin')}
                 className="text-sm text-gray-600 hover:text-um-olive-700 font-medium"
               >
-                Admin
+                🛠️ Admin
               </button>
             )}
             {user?.role === 'tenant_admin' && (
@@ -250,7 +250,7 @@ function App() {
                 onClick={() => navigate('/admin-tenant')}
                 className="text-sm text-gray-600 hover:text-um-olive-700 font-medium"
               >
-                Admin Tenant
+                👥 Admin Tenant
               </button>
             )}
             <span className="text-gray-300">|</span>
@@ -259,7 +259,7 @@ function App() {
             </span>
             <button
               onClick={() => authService.logout()}
-              className="btn btn-secondary text-sm rounded-xl transition-all duration-200 hover:scale-105"
+              className="btn btn-secondary text-sm"
             >
               Déconnexion
             </button>
@@ -270,7 +270,7 @@ function App() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Form - Hidden for viewers */}
         {user?.role !== 'viewer' && (
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
+        <div className="card mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Nouvel Appel</h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -293,14 +293,14 @@ function App() {
                   required
                 />
                 {showCallerSuggestions && callerSuggestions.length > 0 && formData.caller && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {callerSuggestions
                       .filter(s => s.toLowerCase().includes(formData.caller.toLowerCase()))
                       .map((suggestion, idx) => (
                         <button
                           key={idx}
                           type="button"
-                          className="w-full text-left px-3 py-2 hover:bg-um-olive-50 transition-colors duration-200 first:rounded-t-xl last:rounded-b-xl"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-100"
                           onClick={() => {
                             setFormData({ ...formData, caller: suggestion });
                             setShowCallerSuggestions(false);
@@ -331,14 +331,14 @@ function App() {
                     onBlur={() => setTimeout(() => setShowReasonSuggestions(false), 200)}
                   />
                   {showReasonSuggestions && reasonSuggestions.length > 0 && formData.reason && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                       {reasonSuggestions
                         .filter(s => s.toLowerCase().includes(formData.reason.toLowerCase()))
                         .map((suggestion, idx) => (
                           <button
                             key={idx}
                             type="button"
-                            className="w-full text-left px-3 py-2 hover:bg-um-olive-50 transition-colors duration-200 first:rounded-t-xl last:rounded-b-xl"
+                            className="w-full text-left px-3 py-2 hover:bg-gray-100"
                             onClick={() => {
                               setFormData({ ...formData, reason: suggestion });
                               setShowReasonSuggestions(false);
@@ -396,14 +396,14 @@ function App() {
                     placeholder="Ajouter un tag..."
                   />
                   {showTagSuggestions && tagSuggestions.length > 0 && currentTag && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                       {tagSuggestions
                         .filter(s => s.toLowerCase().includes(currentTag.toLowerCase()))
                         .map((suggestion, idx) => (
                           <button
                             key={idx}
                             type="button"
-                            className="w-full text-left px-3 py-2 hover:bg-um-olive-50 transition-colors duration-200 first:rounded-t-xl last:rounded-b-xl"
+                            className="w-full text-left px-3 py-2 hover:bg-gray-100"
                             onClick={() => addTag(suggestion)}
                           >
                             {suggestion}
@@ -458,7 +458,7 @@ function App() {
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+            <button type="submit" className="btn btn-primary">
               Enregistrer l'appel
             </button>
           </form>
@@ -466,7 +466,7 @@ function App() {
         )}
 
         {/* Liste des appels */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="card">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800">
               Appels d'aujourd'hui ({calls.length})
@@ -475,7 +475,7 @@ function App() {
               onClick={() => navigate('/archives')}
               className="text-sm text-um-olive-700 hover:text-um-olive-800 font-medium"
             >
-              Voir les appels précédents
+              📦 Voir les appels précédents
             </button>
           </div>
 
@@ -872,7 +872,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
             onClick={onArchive}
             className="text-orange-600 hover:text-orange-800 text-sm font-medium"
           >
-            Archiver
+            📦 Archiver
           </button>
           <button
             onClick={onDelete}
