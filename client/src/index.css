@@ -4,9 +4,11 @@
 
 @layer base {
   body {
-    @apply bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900;
+    @apply bg-white dark:bg-neutral-950;
     min-height: 100vh;
     transition: background-color 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
