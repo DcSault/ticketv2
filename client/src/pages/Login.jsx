@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { authService } from '../services/api';
 import axios from 'axios';
-import { Window, Button, Icon } from '../components/win98';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -55,62 +54,49 @@ function Login() {
   };
 
   return (
-    <div className="win98-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-      <Window 
-        title="Bienvenue sur Windows" 
-        icon={<Icon type="windows" size={16} />}
-        width="400px"
-        height="auto"
-      >
-        <div style={{ padding: '20px', backgroundColor: '#c0c0c0' }}>
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <Icon type="user" size={64} />
-            <h2 style={{ margin: '10px 0', fontSize: '14px', fontWeight: 'bold' }}>CallFixV2</h2>
-            <p style={{ fontSize: '11px', color: '#000080' }}>Entrez vos informations d'identification</p>
-          </div>
-
-          <form onSubmit={handleSubmit}>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="card max-w-md w-full">
+        <div className="card-header">
+          <h2 className="text-lg">CallFixV2 - Connexion</h2>
+        </div>
+        
+        <div style={{ padding: '20px' }}>
+          <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div style={{ 
-                padding: '8px', 
-                marginBottom: '12px', 
-                backgroundColor: '#fff', 
-                border: '2px solid #ff0000',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                <Icon type="error" size={16} />
-                <span style={{ fontSize: '11px' }}>{error}</span>
+              <div className="error">
+                {error}
               </div>
             )}
 
-            <div className="win98-fieldset" style={{ marginBottom: '12px' }}>
-              <legend className="win98-legend">Identifiant</legend>
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium mb-2">
+                Identifiant
+              </label>
               <input
+                id="username"
                 type="text"
-                className="win98-input"
-                style={{ width: '100%' }}
+                className="input"
                 value={username}
                 onChange={handleUsernameChange}
                 required
                 autoFocus
               />
               {userChecked && !passwordRequired && (
-                <div style={{ marginTop: '4px', fontSize: '10px', color: '#008000', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Icon type="success" size={12} />
-                  <span>Connexion sans mot de passe</span>
-                </div>
+                <p className="success" style={{ marginTop: '8px', padding: '4px' }}>
+                  Connexion sans mot de passe activée
+                </p>
               )}
             </div>
 
             {passwordRequired && (
-              <div className="win98-fieldset" style={{ marginBottom: '12px' }}>
-                <legend className="win98-legend">Mot de passe</legend>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium mb-2">
+                  Mot de passe
+                </label>
                 <input
+                  id="password"
                   type="password"
-                  className="win98-input"
-                  style={{ width: '100%' }}
+                  className="input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -118,17 +104,25 @@ function Login() {
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
-              <Button type="submit" isDefault disabled={loading}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '16px' }}>
+              <button
+                type="submit"
+                className="btn"
+                disabled={loading}
+              >
                 {loading ? 'Connexion...' : 'OK'}
-              </Button>
-              <Button type="button" disabled={loading}>
+              </button>
+              <button
+                type="button"
+                className="btn"
+                disabled={loading}
+              >
                 Annuler
-              </Button>
+              </button>
             </div>
           </form>
         </div>
-      </Window>
+      </div>
     </div>
   );
 }

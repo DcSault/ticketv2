@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  app:
+    image: node:18-alpine
+    container_name: ticketv2-app-dev
+    working_dir: /app
+    command: |
+      sh -c '
+        echo "📦 Installing dependencies..." &&
+        npm install --production=false &&
+        echo "📦 Installing client dependencies..." &&
+        cd client && npm install --production=false && cd .. &&
+        echo "🏗️  Building frontend for development..." &&
+        cd client && npm run build && cd .. &&
+        echo "✅ Verifying build..." &&
+        ls -la /app/client/dist/ &&
+        echo "🗄️  Waiting for database..." &&
+        sleep 5 &&
+        echo "🔧 Setting up database..." &&
+        node server/scripts/setup-db.js &&
+        echo "🚀 Starting application..." &&
+        npm start
+      '
+    ports:
+      - "7979:3000"
+    depends_on:
+      - db
+    environment:
+      # Database
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=ticketv2
+      - DB_USER=postgres
+      - DB_PASSWORD=.njw6JQ*NKX8.vq!9R2!KfDMDB8Y_n
+      
+      # JWT
+      - JWT_SECRET=Le42tp*r7ng_7YxrV_hm_YaZWmXPmxQ-Af.fgPDZ7Zr*mA@AFzt.jx.aJuojyz@Tux2cCBJDif-@QAHkBoVRbaVKfbVGwUfeXt2g
+      - JWT_EXPIRES_IN=7d
+      
+      # Server
+      - PORT=3000
+      - NODE_ENV=production
+      
+      # Default admin
+      - DEFAULT_ADMIN_USERNAME=admin
+      - DEFAULT_ADMIN_PASSWORD=admin123
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/client/node_modules
+    networks:
+      - ticketv2-network
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: ticketv2-db-dev
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: .njw6JQ*NKX8.vq!9R2!KfDMDB8Y_n
+      POSTGRES_DB: ticketv2
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - ticketv2-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_dev:
+    name: ticketv2-db-data-dev
+
+networks:
+  ticketv2-network:
+    name: ticketv2-network-dev
+    driver: bridge
