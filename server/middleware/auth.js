@@ -28,7 +28,7 @@ const requireGlobalAdmin = (req, res, next) => {
 
 // Middleware pour vérifier le rôle tenant admin ou global admin
 const requireTenantAdmin = (req, res, next) => {
-  if (req.user.role !== 'tenant_admin' && req.user.role !== 'global_admin') {
+  if (req.user.role !== 'tenant_admin' && req.user.role !== 'global_admin' && req.user.role !== 'viewer') {
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();
