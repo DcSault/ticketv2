@@ -76,7 +76,7 @@ exports.getStatistics = async (req, res) => {
        FROM call_tags ct
        JOIN tags t ON ct.tag_id = t.id
        JOIN calls c ON ct.call_id = c.id
-       WHERE c.tenant_id = $1 ${dateFilter} AND c.is_archived = false
+       WHERE c.tenant_id = $1 ${dateFilter.replace(/created_at/g, 'c.created_at')} AND c.is_archived = false
        GROUP BY t.name
        ORDER BY count DESC
        LIMIT 10`,
