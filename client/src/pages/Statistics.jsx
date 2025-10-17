@@ -219,16 +219,27 @@ function Statistics() {
             <div className="card mb-8">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Évolution des appels</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={stats.callsByDay.reverse()}>
+                <LineChart data={[...stats.callsByDay].sort((a, b) => new Date(a.date) - new Date(b.date))}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis 
                     dataKey="date" 
-                    tickFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                    tickFormatter={(date) => {
+                      const d = new Date(date);
+                      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+                    }}
                     stroke="#6B7280"
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
                   />
                   <YAxis stroke="#6B7280" />
                   <Tooltip 
-                    labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR')}
+                    labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { 
+                      weekday: 'long',
+                      day: '2-digit', 
+                      month: 'long',
+                      year: 'numeric'
+                    })}
                     contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
                   />
                   <Legend />
@@ -300,20 +311,36 @@ function Statistics() {
               </div>
             </div>
 
-            {/* Distribution horaire */}
+            {/* Distribution des 7 derniers jours */}
             <div className="card mb-8">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Distribution horaire</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Appels des 7 derniers jours</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={stats.callsByDay.slice(0, 7)}>
+                <BarChart data={[...stats.callsByDay]
+                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                  .slice(0, 7)
+                  .reverse()
+                }>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis 
                     dataKey="date" 
-                    tickFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { weekday: 'short' })}
+                    tickFormatter={(date) => {
+                      const d = new Date(date);
+                      const day = d.toLocaleDateString('fr-FR', { weekday: 'short' });
+                      const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+                      return `${day} ${dateStr}`;
+                    }}
                     stroke="#6B7280"
+                    angle={-15}
+                    textAnchor="end"
+                    height={60}
                   />
                   <YAxis stroke="#6B7280" />
                   <Tooltip 
-                    labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR')}
+                    labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { 
+                      weekday: 'long',
+                      day: '2-digit', 
+                      month: 'long'
+                    })}
                     contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
                   />
                   <Bar dataKey="count" fill="#3B82F6" name="Appels" radius={[8, 8, 0, 0]} />
