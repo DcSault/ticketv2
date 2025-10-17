@@ -203,7 +203,7 @@ function App() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
-              className="text-2xl font-bold text-gray-800 hover:text-green-700"
+              className="text-2xl font-bold text-gray-800 hover:text-um-olive-700"
             >
               ← CallFixV2
             </button>
@@ -213,13 +213,13 @@ function App() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/statistics')}
-              className="text-sm text-gray-600 hover:text-green-700 font-medium"
+              className="text-sm text-gray-600 hover:text-um-olive-700 font-medium"
             >
               Statistiques
             </button>
             <button
               onClick={() => navigate('/archives')}
-              className="text-sm text-gray-600 hover:text-green-700 font-medium"
+              className="text-sm text-gray-600 hover:text-um-olive-700 font-medium"
             >
               Archives
             </button>
@@ -227,7 +227,7 @@ function App() {
               <select
                 value={selectedTenant || 'all'}
                 onChange={(e) => handleTenantChange(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-green-600"
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-um-olive-600"
               >
                 <option value="all">Tous les tenants</option>
                 {tenants.map(tenant => (
@@ -240,7 +240,7 @@ function App() {
             {user?.role === 'global_admin' && (
               <button
                 onClick={() => navigate('/admin')}
-                className="text-sm text-gray-600 hover:text-green-700 font-medium"
+                className="text-sm text-gray-600 hover:text-um-olive-700 font-medium"
               >
                 🛠️ Admin
               </button>
@@ -248,7 +248,7 @@ function App() {
             {user?.role === 'tenant_admin' && (
               <button
                 onClick={() => navigate('/admin-tenant')}
-                className="text-sm text-gray-600 hover:text-green-700 font-medium"
+                className="text-sm text-gray-600 hover:text-um-olive-700 font-medium"
               >
                 👥 Admin Tenant
               </button>
@@ -363,13 +363,13 @@ function App() {
                   {formData.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-um-olive-100 text-um-olive-800 rounded-full text-sm"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="hover:text-green-700"
+                        className="hover:text-um-olive-700"
                       >
                         ×
                       </button>
@@ -473,7 +473,7 @@ function App() {
             </h2>
             <button
               onClick={() => navigate('/archives')}
-              className="text-sm text-green-700 hover:text-green-800 font-medium"
+              className="text-sm text-um-olive-700 hover:text-um-olive-800 font-medium"
             >
               📦 Voir les appels précédents
             </button>
@@ -488,7 +488,7 @@ function App() {
                 Les appels des jours précédents sont dans les{' '}
                 <button
                   onClick={() => navigate('/archives')}
-                  className="text-green-700 hover:underline font-medium"
+                  className="text-um-olive-700 hover:underline font-medium"
                 >
                   Archives
                 </button>
@@ -604,7 +604,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
 
   if (isEditing) {
     return (
-      <div className="border border-gray-300 rounded-lg p-4 bg-green-50">
+      <div className="border border-gray-300 rounded-lg p-4 bg-um-olive-50">
         <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Date/Heure</label>
@@ -699,13 +699,13 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
                   editData.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs"
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-um-olive-100 text-um-olive-800 rounded-full text-xs"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="hover:text-green-700"
+                        className="hover:text-um-olive-700"
                       >
                         ×
                       </button>
@@ -864,7 +864,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
         <div className="flex gap-2">
           <button
             onClick={onEdit}
-            className="text-green-700 hover:text-green-800 text-sm font-medium"
+            className="text-um-olive-700 hover:text-um-olive-800 text-sm font-medium"
           >
             Modifier
           </button>
