@@ -20,6 +20,11 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Route de test (AVANT les autres routes)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
+
 // Routes API
 app.use('/api/auth', authRoutes);
 app.use('/api/calls', callRoutes);
@@ -28,20 +33,31 @@ app.use('/api/admin', adminRoutes);
 
 // Servir le frontend en production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/dist')));
+  const fs = require('fs');
+  const distPath = path.join(__dirname, '../client/dist');
   
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-  });
+  // Vérifier si le dossier dist existe
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  } else {
+    console.warn('⚠️  Frontend build not found. Please run: cd client && npm run build');
+    // Rediriger vers l'API health pour éviter les erreurs
+    app.get('*', (req, res) => {
+      res.json({ 
+        error: 'Frontend not built', 
+        message: 'Please build the frontend or access the API directly',
+        api: '/api/health'
+      });
+    });
+  }
 }
 
-// Route de test
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
-});
-
-// Gestion des erreurs 404
-app.use((req, res) => {
+// Gestion des erreurs 404 pour les routes API uniquement
+app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 

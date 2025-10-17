@@ -15,12 +15,14 @@ services:
         echo "📦 Copying files..." &&
         cp -R /tmp/ticketv2/* /app/ &&
         rm -rf /tmp/ticketv2 &&
-        echo " Installing dependencies..." &&
-        npm install &&
+        echo "📦 Installing dependencies..." &&
+        npm install --production=false &&
         echo "📦 Installing client dependencies..." &&
-        cd client && npm install && cd .. &&
+        cd client && npm install --production=false && cd .. &&
         echo "🏗️  Building frontend for production..." &&
         cd client && npm run build && cd .. &&
+        echo "✅ Verifying build..." &&
+        ls -la /app/client/dist/ &&
         echo "🗄️  Waiting for database..." &&
         sleep 5 &&
         echo "🔧 Setting up database..." &&
