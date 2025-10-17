@@ -527,7 +527,8 @@ function UsersTab({ users, tenants, onAdd, onEdit, onDelete, loadTenants }) {
     const roles = {
       user: 'Utilisateur',
       tenant_admin: 'Admin Tenant',
-      global_admin: 'Admin Global'
+      global_admin: 'Admin Global',
+      viewer: 'Viewer'
     };
     return roles[role] || role;
   };
@@ -563,6 +564,7 @@ function UsersTab({ users, tenants, onAdd, onEdit, onDelete, loadTenants }) {
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     user.role === 'global_admin' ? 'bg-red-100 text-red-800' :
                     user.role === 'tenant_admin' ? 'bg-blue-100 text-blue-800' :
+                    user.role === 'viewer' ? 'bg-purple-100 text-purple-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {getRoleName(user.role)}
@@ -813,11 +815,17 @@ function UserModal({ user, tenants, onClose, onSave }) {
             >
               <option value="user">Utilisateur</option>
               <option value="tenant_admin">Admin Tenant</option>
+              <option value="viewer">Viewer (Lecture seule - Multi-tenant)</option>
               <option value="global_admin">Admin Global</option>
             </select>
+            {formData.role === 'viewer' && (
+              <p className="text-xs text-gray-500 mt-1">
+                Le rôle Viewer a accès à tous les tenants en lecture seule
+              </p>
+            )}
           </div>
 
-          {formData.role !== 'global_admin' && (
+          {formData.role !== 'global_admin' && formData.role !== 'viewer' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tenant *
@@ -826,7 +834,7 @@ function UserModal({ user, tenants, onClose, onSave }) {
                 className="input"
                 value={formData.tenantId}
                 onChange={(e) => setFormData({ ...formData, tenantId: e.target.value })}
-                required={formData.role !== 'global_admin'}
+                required={formData.role !== 'global_admin' && formData.role !== 'viewer'}
               >
                 <option value="">Sélectionner un tenant</option>
                 {tenants.map((tenant) => (
