@@ -152,9 +152,9 @@ exports.createUser = async (req, res) => {
     return res.status(400).json({ error: 'Invalid role' });
   }
 
-  // tenant_admin ne peut pas créer de global_admin ou viewer
-  if (userRole === 'tenant_admin' && (role === 'global_admin' || role === 'viewer')) {
-    return res.status(403).json({ error: 'Tenant admin cannot create global admin or viewer' });
+  // tenant_admin ne peut pas créer de global_admin
+  if (userRole === 'tenant_admin' && role === 'global_admin') {
+    return res.status(403).json({ error: 'Tenant admin cannot create global admin' });
   }
 
   // tenant_admin doit créer dans son propre tenant
@@ -200,9 +200,9 @@ exports.updateUser = async (req, res) => {
       if (checkUser.rows[0].tenant_id !== userTenantId) {
         return res.status(403).json({ error: 'Cannot modify users from other tenants' });
       }
-      // tenant_admin ne peut pas modifier un global_admin ou viewer
-      if (checkUser.rows[0].role === 'global_admin' || checkUser.rows[0].role === 'viewer') {
-        return res.status(403).json({ error: 'Cannot modify global admin or viewer' });
+      // tenant_admin ne peut pas modifier un global_admin
+      if (checkUser.rows[0].role === 'global_admin') {
+        return res.status(403).json({ error: 'Cannot modify global admin' });
       }
     }
 
@@ -221,9 +221,9 @@ exports.updateUser = async (req, res) => {
       if (!['user', 'tenant_admin', 'global_admin', 'viewer'].includes(role)) {
         return res.status(400).json({ error: 'Invalid role' });
       }
-      // tenant_admin ne peut pas promouvoir en global_admin ou viewer
-      if (userRole === 'tenant_admin' && (role === 'global_admin' || role === 'viewer')) {
-        return res.status(403).json({ error: 'Cannot assign global admin or viewer role' });
+      // tenant_admin ne peut pas promouvoir en global_admin
+      if (userRole === 'tenant_admin' && role === 'global_admin') {
+        return res.status(403).json({ error: 'Cannot assign global admin role' });
       }
       updates.push(`role = $${paramCount}`);
       params.push(role);
@@ -298,9 +298,9 @@ exports.deleteUser = async (req, res) => {
     if (checkUser.rows[0].tenant_id !== userTenantId) {
       return res.status(403).json({ error: 'Cannot delete users from other tenants' });
     }
-    // tenant_admin ne peut pas supprimer un global_admin ou viewer
-    if (checkUser.rows[0].role === 'global_admin' || checkUser.rows[0].role === 'viewer') {
-      return res.status(403).json({ error: 'Cannot delete global admin or viewer' });
+    // tenant_admin ne peut pas supprimer un global_admin
+    if (checkUser.rows[0].role === 'global_admin') {
+      return res.status(403).json({ error: 'Cannot delete global admin' });
     }
   }
 

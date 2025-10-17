@@ -169,9 +169,13 @@ function AdminTenant() {
                       <td className="py-3 px-4">{u.full_name || '-'}</td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded text-sm ${
-                          u.role === 'tenant_admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                          u.role === 'tenant_admin' ? 'bg-purple-100 text-purple-800' : 
+                          u.role === 'viewer' ? 'bg-blue-100 text-blue-800' : 
+                          'bg-gray-100 text-gray-800'
                         }`}>
-                          {u.role === 'tenant_admin' ? 'Admin Tenant' : 'Utilisateur'}
+                          {u.role === 'tenant_admin' ? 'Admin Tenant' : 
+                           u.role === 'viewer' ? 'Viewer' : 
+                           'Utilisateur'}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right space-x-2">
@@ -281,6 +285,7 @@ function AdminTenant() {
                 >
                   <option value="user">Utilisateur</option>
                   <option value="tenant_admin">Admin Tenant</option>
+                  <option value="viewer">Viewer (Lecture seule)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   Seuls les global_admin peuvent créer d'autres global_admin
