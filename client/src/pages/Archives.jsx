@@ -23,7 +23,7 @@ function Archives() {
   const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState(
     canSelectTenant
-      ? localStorage.getItem('selectedTenantId') || (user?.role === 'viewer' ? '' : 'all')
+      ? localStorage.getItem('selectedTenantId') || 'all'
       : null
   );
 
@@ -47,10 +47,6 @@ function Archives() {
     try {
       const response = await adminService.getTenants();
       setTenants(response.data);
-      // Si viewer et pas de tenant sélectionné, sélectionner le premier
-      if (user?.role === 'viewer' && !selectedTenant && response.data.length > 0) {
-        setSelectedTenant(response.data[0].id.toString());
-      }
     } catch (error) {
       console.error('Error loading tenants:', error);
     }
@@ -204,11 +200,11 @@ function Archives() {
             </button>
             {canSelectTenant && tenants.length > 0 && (
               <select
-                value={selectedTenant || (user?.role === 'viewer' ? tenants[0]?.id : 'all')}
+                value={selectedTenant || 'all'}
                 onChange={(e) => handleTenantChange(e.target.value)}
                 className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
               >
-                {user?.role === 'global_admin' && <option value="all">🌍 Tous les tenants</option>}
+                <option value="all">🌍 Tous les tenants</option>
                 {tenants.map(tenant => (
                   <option key={tenant.id} value={tenant.id}>
                     {tenant.display_name}
