@@ -323,22 +323,23 @@ exports.importCalls = async (req, res) => {
       console.log(`📦 Ancien format détecté (v${jsonData.metadata.version || 'inconnue'})`);
       console.log(`📊 ${jsonData.data.tickets.length} tickets à convertir`);
       
-      // Convertir les tickets en calls
-      calls = jsonData.data.tickets
-        .filter(ticket => !ticket.isArchived) // Ignorer les tickets archivés
-        .map(ticket => ({
-          caller: ticket.caller,
-          reason: ticket.reason || '',
-          tags: (ticket.tags || []).map(tag => 
-            typeof tag === 'string' ? { name: tag } : tag
-          ),
-          isBlocking: ticket.isBlocking || false,
-          isGLPI: ticket.isGLPI || false,
-          glpiNumber: ticket.glpiNumber || '',
-          createdAt: ticket.createdAt
-        }));
+      // Convertir les tickets en calls (on garde les archivés aussi)
+      calls = jsonData.data.tickets.map(ticket => ({
+        caller: ticket.caller,
+        reason: ticket.reason || '',
+        tags: (ticket.tags || []).map(tag => 
+          typeof tag === 'string' ? { name: tag } : tag
+        ),
+        isBlocking: ticket.isBlocking || false,
+        isGLPI: ticket.isGLPI || false,
+        glpiNumber: ticket.glpiNumber || '',
+        isArchived: ticket.isArchived || false,
+        archivedAt: ticket.archivedAt || null,
+        archivedBy: ticket.archivedBy || null,
+        createdAt: ticket.createdAt
+      }));
       
-      console.log(`✅ ${calls.length} appels convertis (${jsonData.data.tickets.length - calls.length} archivés ignorés)`);
+      console.log(`✅ ${calls.length} appels à importer (dont ${calls.filter(c => c.isArchived).length} archivés)`);
     } else if (Array.isArray(jsonData)) {
       // Format nouveau: [{caller: ..., reason: ..., ...}]
       calls = jsonData;
@@ -350,7 +351,10 @@ exports.importCalls = async (req, res) => {
 
     let imported = 0;
     let skipped = 0;
+    let duplicates = 0;
     const errors = [];
+
+    console.log(`📥 Début de l'import : ${calls.length} appels à traiter`);
 
     // Importer chaque appel
     for (const call of calls) {
@@ -362,6 +366,9 @@ exports.importCalls = async (req, res) => {
           isBlocking = false,
           isGLPI = false,
           glpiNumber = '',
+          isArchived = false,
+          archivedAt = null,
+          archivedBy = null,
           createdAt
         } = call;
 
@@ -371,12 +378,29 @@ exports.importCalls = async (req, res) => {
           continue;
         }
 
-        // Créer l'appel
+        // Vérifier si l'appel existe déjà (doublon)
+        // Un doublon = même appelant + même date de création (à la seconde près)
+        const duplicateCheck = await pool.query(
+          `SELECT id FROM calls 
+           WHERE tenant_id = $1 
+           AND caller_name = $2 
+           AND created_at = $3`,
+          [tenantId, caller, createdAt || new Date()]
+        );
+
+        if (duplicateCheck.rows.length > 0) {
+          // Doublon détecté, on le saute
+          duplicates++;
+          skipped++;
+          continue;
+        }
+
+        // Créer l'appel (avec les champs d'archivage)
         const callResult = await pool.query(
           `INSERT INTO calls (
             tenant_id, caller_name, reason_name, is_blocking, is_glpi, glpi_number,
-            created_by, last_modified_by, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+            is_archived, archived_at, created_by, last_modified_by, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
           [
             tenantId,
             caller,
@@ -384,6 +408,8 @@ exports.importCalls = async (req, res) => {
             isBlocking,
             isGLPI,
             glpiNumber || null,
+            isArchived,
+            archivedAt,
             userId,
             userId,
             createdAt || new Date()
@@ -445,10 +471,13 @@ exports.importCalls = async (req, res) => {
       }
     }
 
+    console.log(`✅ Import terminé : ${imported} importés, ${duplicates} doublons ignorés, ${skipped - duplicates} erreurs`);
+
     res.json({
       message: 'Import completed',
       imported,
       skipped,
+      duplicates,
       total: calls.length,
       errors: errors.length > 0 ? errors.slice(0, 10) : undefined // Limiter à 10 erreurs
     });

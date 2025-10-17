@@ -99,6 +99,12 @@ function Statistics() {
             >
               📞 Application
             </button>
+            <button
+              onClick={() => navigate('/archives')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              📦 Archives
+            </button>
             {user?.role === 'global_admin' && (
               <button
                 onClick={() => navigate('/admin')}

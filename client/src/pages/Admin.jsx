@@ -285,9 +285,15 @@ function ImportTab({ tenants, loadTenants }) {
 
       const response = await adminService.importCalls(formData);
       
+      const { imported, duplicates = 0, total } = response.data;
+      let message = `${imported} appel(s) importé(s) avec succès`;
+      if (duplicates > 0) {
+        message += ` (${duplicates} doublon(s) ignoré(s))`;
+      }
+      
       setResult({
         success: true,
-        message: `${response.data.imported} appel(s) importé(s) avec succès`,
+        message,
         details: response.data
       });
       
@@ -428,13 +434,17 @@ function ImportTab({ tenants, loadTenants }) {
             </p>
             {result.details && (
               <div className="mt-2 text-sm text-gray-700">
-                <p>• Appels importés : {result.details.imported}</p>
-                {result.details.skipped > 0 && (
-                  <p>• Appels ignorés : {result.details.skipped}</p>
+                <p>• Total analysé : {result.details.total}</p>
+                <p>• ✅ Appels importés : {result.details.imported}</p>
+                {result.details.duplicates > 0 && (
+                  <p>• 🔄 Doublons ignorés : {result.details.duplicates}</p>
+                )}
+                {(result.details.skipped - (result.details.duplicates || 0)) > 0 && (
+                  <p>• ⚠️ Erreurs : {result.details.skipped - (result.details.duplicates || 0)}</p>
                 )}
                 {result.details.errors?.length > 0 && (
                   <div className="mt-2">
-                    <p className="font-medium">Erreurs :</p>
+                    <p className="font-medium">Détails des erreurs :</p>
                     <ul className="list-disc list-inside">
                       {result.details.errors.map((err, idx) => (
                         <li key={idx}>{err}</li>

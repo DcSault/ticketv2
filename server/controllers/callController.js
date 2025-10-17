@@ -2,7 +2,7 @@ const pool = require('../config/database');
 
 // Obtenir tous les appels du tenant
 exports.getCalls = async (req, res) => {
-  const { startDate, endDate, limit = 100, offset = 0 } = req.query;
+  const { startDate, endDate, limit = 100, offset = 0, archived } = req.query;
   const tenantId = req.user.role === 'global_admin' ? req.query.tenantId : req.user.tenantId;
 
   try {
@@ -21,8 +21,19 @@ exports.getCalls = async (req, res) => {
       LEFT JOIN tags t ON ct.tag_id = t.id
       LEFT JOIN users cu ON c.created_by = cu.id
       LEFT JOIN users mu ON c.last_modified_by = mu.id
-      WHERE c.is_archived = false
+      WHERE 1=1
     `;
+
+    // Filtre sur is_archived selon le paramètre
+    if (archived === 'true') {
+      query += ' AND c.is_archived = true';
+    } else if (archived === 'false') {
+      query += ' AND c.is_archived = false';
+    }
+    // Si archived n'est pas spécifié, on retourne tous les appels (par défaut: non archivés)
+    else {
+      query += ' AND c.is_archived = false';
+    }
 
     const params = [];
     let paramCount = 1;

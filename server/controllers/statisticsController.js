@@ -30,64 +30,64 @@ exports.getStatistics = async (req, res) => {
       }
     }
 
-    // Total d'appels
+    // Total d'appels (incluant les archivés)
     const totalResult = await pool.query(
-      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter} AND is_archived = false`,
+      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter}`,
       params
     );
 
-    // Appels bloquants
+    // Appels bloquants (incluant les archivés)
     const blockingResult = await pool.query(
-      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter} AND is_blocking = true AND is_archived = false`,
+      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter} AND is_blocking = true`,
       params
     );
 
-    // Tickets GLPI
+    // Tickets GLPI (incluant les archivés)
     const glpiResult = await pool.query(
-      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter} AND is_glpi = true AND is_archived = false`,
+      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter} AND is_glpi = true`,
       params
     );
 
-    // Top appelants
+    // Top appelants (incluant les archivés)
     const topCallersResult = await pool.query(
       `SELECT caller_name, COUNT(*) as count
        FROM calls
-       WHERE tenant_id = $1 ${dateFilter} AND is_archived = false
+       WHERE tenant_id = $1 ${dateFilter}
        GROUP BY caller_name
        ORDER BY count DESC
        LIMIT 10`,
       params
     );
 
-    // Top raisons
+    // Top raisons (incluant les archivés)
     const topReasonsResult = await pool.query(
       `SELECT reason_name, COUNT(*) as count
        FROM calls
-       WHERE tenant_id = $1 ${dateFilter} AND is_archived = false AND reason_name IS NOT NULL
+       WHERE tenant_id = $1 ${dateFilter} AND reason_name IS NOT NULL
        GROUP BY reason_name
        ORDER BY count DESC
        LIMIT 10`,
       params
     );
 
-    // Top tags
+    // Top tags (incluant les archivés)
     const topTagsResult = await pool.query(
       `SELECT t.name, COUNT(*) as count
        FROM call_tags ct
        JOIN tags t ON ct.tag_id = t.id
        JOIN calls c ON ct.call_id = c.id
-       WHERE c.tenant_id = $1 AND t.tenant_id = $1 ${dateFilter.replace(/created_at/g, 'c.created_at')} AND c.is_archived = false
+       WHERE c.tenant_id = $1 AND t.tenant_id = $1 ${dateFilter.replace(/created_at/g, 'c.created_at')}
        GROUP BY t.name
        ORDER BY count DESC
        LIMIT 10`,
       params
     );
 
-    // Appels par jour (pour les graphiques)
+    // Appels par jour (pour les graphiques, incluant les archivés)
     const callsByDayResult = await pool.query(
       `SELECT DATE(created_at) as date, COUNT(*) as count
        FROM calls
-       WHERE tenant_id = $1 ${dateFilter} AND is_archived = false
+       WHERE tenant_id = $1 ${dateFilter}
        GROUP BY DATE(created_at)
        ORDER BY date DESC
        LIMIT 30`,

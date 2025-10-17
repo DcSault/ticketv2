@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import App from './pages/App';
 import Statistics from './pages/Statistics';
 import Admin from './pages/Admin';
+import Archives from './pages/Archives';
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -65,6 +66,15 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <Statistics />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/archives"
+        element={
+          <ProtectedRoute>
+            <Archives />
           </ProtectedRoute>
         }
       />
