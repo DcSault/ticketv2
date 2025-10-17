@@ -10,8 +10,17 @@ exports.getStatistics = async (req, res) => {
     const params = [tenantId];
 
     if (startDate && endDate) {
-      dateFilter = 'AND created_at BETWEEN $2 AND $3';
+      // Utiliser >= et < pour inclure toute la journée de fin
+      dateFilter = "AND created_at >= $2::date AND created_at < ($3::date + INTERVAL '1 day')";
       params.push(startDate, endDate);
+    } else if (startDate) {
+      // Seulement date de début
+      dateFilter = "AND created_at >= $2::date";
+      params.push(startDate);
+    } else if (endDate) {
+      // Seulement date de fin
+      dateFilter = "AND created_at < ($2::date + INTERVAL '1 day')";
+      params.push(endDate);
     } else {
       // Calculer la date de début selon la période
       switch (period) {
@@ -110,9 +119,10 @@ exports.getStatistics = async (req, res) => {
       );
     }
 
-    // Appels par heure (uniquement si période = jour actuel)
+    // Appels par heure (pour aujourd'hui ou pour un jour spécifique)
     let callsByHourResult = null;
     if (period === 'day' && !startDate && !endDate) {
+      // Aujourd'hui
       callsByHourResult = await pool.query(
         `SELECT 
           EXTRACT(HOUR FROM created_at) as hour,
@@ -123,6 +133,19 @@ exports.getStatistics = async (req, res) => {
          GROUP BY EXTRACT(HOUR FROM created_at)
          ORDER BY hour`,
         [tenantId]
+      );
+    } else if (startDate && endDate && startDate === endDate) {
+      // Un jour spécifique (comme Hier)
+      callsByHourResult = await pool.query(
+        `SELECT 
+          EXTRACT(HOUR FROM created_at) as hour,
+          COUNT(*) as count
+         FROM calls
+         WHERE tenant_id = $1 
+         AND DATE(created_at) = $2::date
+         GROUP BY EXTRACT(HOUR FROM created_at)
+         ORDER BY hour`,
+        [tenantId, startDate]
       );
     }
 

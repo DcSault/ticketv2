@@ -24,15 +24,6 @@ exports.getCalls = async (req, res) => {
       WHERE 1=1
     `;
 
-    // Filtre selon le paramètre archived
-    if (archived === 'true') {
-      // Archives : tous les appels AVANT aujourd'hui
-      query += ' AND DATE(c.created_at) < CURRENT_DATE';
-    } else {
-      // Application : uniquement les appels d'AUJOURD'HUI
-      query += ' AND DATE(c.created_at) = CURRENT_DATE';
-    }
-
     const params = [];
     let paramCount = 1;
 
@@ -42,16 +33,29 @@ exports.getCalls = async (req, res) => {
       paramCount++;
     }
 
-    if (startDate) {
-      query += ` AND c.created_at >= $${paramCount}`;
+    // Filtre de dates personnalisées (prioritaire)
+    if (startDate && endDate) {
+      // Utiliser >= et < pour inclure toute la journée de fin
+      query += ` AND c.created_at >= $${paramCount}::date AND c.created_at < ($${paramCount + 1}::date + INTERVAL '1 day')`;
+      params.push(startDate, endDate);
+      paramCount += 2;
+    } else if (startDate) {
+      query += ` AND c.created_at >= $${paramCount}::date`;
       params.push(startDate);
       paramCount++;
-    }
-
-    if (endDate) {
-      query += ` AND c.created_at <= $${paramCount}`;
+    } else if (endDate) {
+      query += ` AND c.created_at < ($${paramCount}::date + INTERVAL '1 day')`;
       params.push(endDate);
       paramCount++;
+    } else {
+      // Filtre par défaut selon le paramètre archived (seulement si pas de dates personnalisées)
+      if (archived === 'true') {
+        // Archives : tous les appels AVANT aujourd'hui
+        query += ' AND DATE(c.created_at) < CURRENT_DATE';
+      } else {
+        // Application : uniquement les appels d'AUJOURD'HUI
+        query += ' AND DATE(c.created_at) = CURRENT_DATE';
+      }
     }
 
     query += ` GROUP BY c.id, cu.username, cu.full_name, mu.username, mu.full_name`;
