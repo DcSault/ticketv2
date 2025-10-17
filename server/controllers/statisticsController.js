@@ -125,29 +125,57 @@ exports.getStatistics = async (req, res) => {
     // Appels par heure (pour aujourd'hui ou pour un jour spécifique)
     let callsByHourResult = null;
     if (period === 'day' && !startDate && !endDate) {
-      // Aujourd'hui
+      // Aujourd'hui - afficher de la première heure avec appels jusqu'à l'heure actuelle
       callsByHourResult = await pool.query(
-        `SELECT 
-          EXTRACT(HOUR FROM created_at) as hour,
-          COUNT(*) as count
-         FROM calls
-         WHERE tenant_id = $1 
-         AND DATE(created_at) = CURRENT_DATE
-         GROUP BY EXTRACT(HOUR FROM created_at)
-         ORDER BY hour`,
+        `WITH hour_range AS (
+          SELECT 
+            COALESCE(MIN(EXTRACT(HOUR FROM created_at)::integer), EXTRACT(HOUR FROM NOW())::integer) as min_hour,
+            EXTRACT(HOUR FROM NOW())::integer as max_hour
+          FROM calls
+          WHERE tenant_id = $1 AND DATE(created_at) = CURRENT_DATE
+        ),
+        hours AS (
+          SELECT generate_series(
+            (SELECT min_hour FROM hour_range),
+            (SELECT max_hour FROM hour_range)
+          ) as hour
+        )
+        SELECT 
+          h.hour,
+          COALESCE(COUNT(c.id), 0) as count
+        FROM hours h
+        LEFT JOIN calls c ON EXTRACT(HOUR FROM c.created_at) = h.hour 
+          AND c.tenant_id = $1 
+          AND DATE(c.created_at) = CURRENT_DATE
+        GROUP BY h.hour
+        ORDER BY h.hour`,
         [tenantId]
       );
     } else if (startDate && endDate && startDate === endDate) {
-      // Un jour spécifique (comme Hier)
+      // Un jour spécifique (comme Hier) - afficher de la première à la dernière heure avec appels
       callsByHourResult = await pool.query(
-        `SELECT 
-          EXTRACT(HOUR FROM created_at) as hour,
-          COUNT(*) as count
-         FROM calls
-         WHERE tenant_id = $1 
-         AND DATE(created_at) = $2::date
-         GROUP BY EXTRACT(HOUR FROM created_at)
-         ORDER BY hour`,
+        `WITH hour_range AS (
+          SELECT 
+            COALESCE(MIN(EXTRACT(HOUR FROM created_at)::integer), 0) as min_hour,
+            COALESCE(MAX(EXTRACT(HOUR FROM created_at)::integer), 23) as max_hour
+          FROM calls
+          WHERE tenant_id = $1 AND DATE(created_at) = $2::date
+        ),
+        hours AS (
+          SELECT generate_series(
+            (SELECT min_hour FROM hour_range),
+            (SELECT max_hour FROM hour_range)
+          ) as hour
+        )
+        SELECT 
+          h.hour,
+          COALESCE(COUNT(c.id), 0) as count
+        FROM hours h
+        LEFT JOIN calls c ON EXTRACT(HOUR FROM c.created_at) = h.hour 
+          AND c.tenant_id = $1 
+          AND DATE(c.created_at) = $2::date
+        GROUP BY h.hour
+        ORDER BY h.hour`,
         [tenantId, startDate]
       );
     }
