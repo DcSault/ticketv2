@@ -9,11 +9,11 @@ function App() {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Tenant selection for global_admin and multi-tenant viewer
-  const isMultiTenant = user?.role === 'global_admin' || (user?.role === 'viewer' && !user?.tenantId);
+  // Tenant selection for global_admin and viewer
+  const canSelectTenant = user?.role === 'global_admin' || user?.role === 'viewer';
   const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState(
-    isMultiTenant
+    canSelectTenant
       ? localStorage.getItem('selectedTenantId') || 'all'
       : null
   );
@@ -41,7 +41,7 @@ function App() {
   const [editingCall, setEditingCall] = useState(null);
 
   useEffect(() => {
-    if (isMultiTenant) {
+    if (canSelectTenant) {
       loadTenants();
     }
   }, []);
@@ -72,7 +72,7 @@ function App() {
   const loadCalls = async () => {
     try {
       const params = { limit: 100 };
-      if (isMultiTenant && selectedTenant && selectedTenant !== 'all') {
+      if (canSelectTenant && selectedTenant && selectedTenant !== 'all') {
         params.tenantId = selectedTenant;
       }
       const response = await callService.getCalls(params);
@@ -223,7 +223,7 @@ function App() {
             >
               📦 Archives
             </button>
-            {isMultiTenant && (
+            {canSelectTenant && (
               <select
                 value={selectedTenant || 'all'}
                 onChange={(e) => handleTenantChange(e.target.value)}

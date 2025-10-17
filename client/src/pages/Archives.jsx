@@ -18,11 +18,11 @@ function Archives() {
     isGlpi: null
   });
 
-  // Tenant selection for global_admin and multi-tenant viewer
-  const isMultiTenant = user?.role === 'global_admin' || (user?.role === 'viewer' && !user?.tenantId);
+  // Tenant selection for global_admin and viewer
+  const canSelectTenant = user?.role === 'global_admin' || user?.role === 'viewer';
   const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState(
-    isMultiTenant
+    canSelectTenant
       ? localStorage.getItem('selectedTenantId') || 'all'
       : null
   );
@@ -33,7 +33,7 @@ function Archives() {
   const [tagSuggestions, setTagSuggestions] = useState([]);
 
   useEffect(() => {
-    if (isMultiTenant) {
+    if (canSelectTenant) {
       loadTenants();
     }
   }, []);
@@ -71,7 +71,7 @@ function Archives() {
       
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
-      if (isMultiTenant && selectedTenant && selectedTenant !== 'all') {
+      if (canSelectTenant && selectedTenant && selectedTenant !== 'all') {
         params.tenantId = selectedTenant;
       }
       
@@ -198,7 +198,7 @@ function Archives() {
             >
               📊 Statistiques
             </button>
-            {isMultiTenant && (
+            {canSelectTenant && (
               <select
                 value={selectedTenant || 'all'}
                 onChange={(e) => handleTenantChange(e.target.value)}
