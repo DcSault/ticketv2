@@ -167,7 +167,7 @@ exports.createCall = async (req, res) => {
         c.*,
         json_agg(
           json_build_object('id', t.id, 'name', t.name)
-        ) FILTER (WHERE t.id IS NOT NULL) as tags
+        ) FILTER (WHERE t.id IS NOT NULL AND t.tenant_id = c.tenant_id) as tags
        FROM calls c
        LEFT JOIN call_tags ct ON c.id = ct.call_id
        LEFT JOIN tags t ON ct.tag_id = t.id
@@ -335,7 +335,7 @@ exports.updateCall = async (req, res) => {
         c.*,
         json_agg(
           json_build_object('id', t.id, 'name', t.name)
-        ) FILTER (WHERE t.id IS NOT NULL) as tags
+        ) FILTER (WHERE t.id IS NOT NULL AND t.tenant_id = c.tenant_id) as tags
        FROM calls c
        LEFT JOIN call_tags ct ON c.id = ct.call_id
        LEFT JOIN tags t ON ct.tag_id = t.id
