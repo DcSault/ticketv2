@@ -30,8 +30,8 @@ function AdminTenant() {
     setLoading(true);
     try {
       const response = await adminService.getUsers();
-      // Filter to show only users from the same tenant
-      setUsers(response.data.filter(u => u.tenant_id === user.tenant_id));
+      // Le backend filtre déjà selon le rôle (tenant_admin voit son tenant, global_admin voit tous)
+      setUsers(response.data);
     } catch (error) {
       console.error('Error loading users:', error);
     } finally {
