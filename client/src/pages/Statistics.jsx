@@ -39,6 +39,7 @@ function Statistics() {
   const [period, setPeriod] = useState('month');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   
   // Tenant selection for global_admin
   const [tenants, setTenants] = useState([]);
@@ -215,18 +216,20 @@ function Statistics() {
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Filtres</h2>
           
           {/* Boutons de raccourcis */}
-          <div className="flex gap-2 mb-4 flex-wrap">
+          <div className="flex gap-2 mb-4 flex-wrap items-center">
             <button
               onClick={() => {
                 setPeriod('day');
                 setStartDate('');
                 setEndDate('');
+                setShowAdvanced(false);
               }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 period === 'day' && !startDate && !endDate
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
+              disabled={showAdvanced}
             >
               📅 Aujourd'hui
             </button>
@@ -238,8 +241,10 @@ function Statistics() {
                 setPeriod('day');
                 setStartDate(yesterdayStr);
                 setEndDate(yesterdayStr);
+                setShowAdvanced(false);
               }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200`}
+              disabled={showAdvanced}
             >
               ⏮️ Hier
             </button>
@@ -248,12 +253,14 @@ function Statistics() {
                 setPeriod('week');
                 setStartDate('');
                 setEndDate('');
+                setShowAdvanced(false);
               }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 period === 'week' && !startDate && !endDate
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
+              disabled={showAdvanced}
             >
               📆 Cette semaine
             </button>
@@ -262,12 +269,14 @@ function Statistics() {
                 setPeriod('month');
                 setStartDate('');
                 setEndDate('');
+                setShowAdvanced(false);
               }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 period === 'month' && !startDate && !endDate
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
+              disabled={showAdvanced}
             >
               📊 Ce mois
             </button>
@@ -276,62 +285,86 @@ function Statistics() {
                 setPeriod('year');
                 setStartDate('');
                 setEndDate('');
+                setShowAdvanced(false);
               }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 period === 'year' && !startDate && !endDate
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
+              disabled={showAdvanced}
             >
               📈 Cette année
             </button>
+            
+            {/* Séparateur */}
+            <div className="h-8 w-px bg-gray-300 mx-2"></div>
+            
+            {/* Bouton Avancé */}
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                showAdvanced
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              🔧 {showAdvanced ? 'Masquer' : 'Avancé'}
+            </button>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Période
-              </label>
-              <select
-                className="input"
-                value={period}
-                onChange={(e) => {
-                  setPeriod(e.target.value);
-                  setStartDate('');
-                  setEndDate('');
-                }}
-              >
-                <option value="day">Aujourd'hui</option>
-                <option value="week">Cette semaine</option>
-                <option value="month">Ce mois</option>
-                <option value="year">Cette année</option>
-              </select>
-            </div>
+          {/* Section avancée (dates personnalisées) */}
+          {showAdvanced && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="grid md:grid-cols-3 gap-4 items-end">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date de début
+                  </label>
+                  <input
+                    type="date"
+                    className="input"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date de début
-              </label>
-              <input
-                type="date"
-                className="input"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date de fin
+                  </label>
+                  <input
+                    type="date"
+                    className="input"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date de fin
-              </label>
-              <input
-                type="date"
-                className="input"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
+                <div>
+                  <button
+                    onClick={() => {
+                      if (startDate || endDate) {
+                        loadStatistics();
+                      }
+                    }}
+                    className="btn btn-primary w-full"
+                    disabled={!startDate && !endDate}
+                  >
+                    ✓ Appliquer
+                  </button>
+                </div>
+              </div>
+              
+              {(startDate || endDate) && (
+                <div className="mt-3 text-sm text-gray-600">
+                  ℹ️ Période personnalisée active : 
+                  {startDate && <span className="font-semibold"> du {new Date(startDate).toLocaleDateString('fr-FR')}</span>}
+                  {endDate && <span className="font-semibold"> au {new Date(endDate).toLocaleDateString('fr-FR')}</span>}
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
 
         {stats && (
@@ -370,10 +403,10 @@ function Statistics() {
               </div>
             </div>
 
-            {/* Graphique horaire (uniquement pour aujourd'hui) - Courbe */}
+            {/* Graphique horaire (pour aujourd'hui et hier) - Courbe */}
             {stats.callsByHour && stats.callsByHour.length > 0 && (
               <div className="card mb-8">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Évolution heure par heure (Aujourd'hui)</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Évolution heure par heure</h3>
                 <div style={{ height: '300px' }}>
                   <Line
                     data={{
@@ -567,77 +600,6 @@ function Statistics() {
                     }}
                   />
                 </div>
-              </div>
-            </div>
-
-            {/* Distribution des 7 derniers jours */}
-            <div className="card mb-8">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Appels des 7 derniers jours</h3>
-              <div style={{ height: '350px' }}>
-                <Bar
-                  data={{
-                    labels: [...stats.callsByDay]
-                      .sort((a, b) => new Date(b.date) - new Date(a.date))
-                      .slice(0, 7)
-                      .reverse()
-                      .map(item => {
-                        const d = new Date(item.date);
-                        const day = d.toLocaleDateString('fr-FR', { weekday: 'short' });
-                        const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-                        return `${day} ${dateStr}`;
-                      }),
-                    datasets: [{
-                      label: 'Appels',
-                      data: [...stats.callsByDay]
-                        .sort((a, b) => new Date(b.date) - new Date(a.date))
-                        .slice(0, 7)
-                        .reverse()
-                        .map(item => item.count),
-                      backgroundColor: '#3B82F6',
-                      borderRadius: 8,
-                    }]
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                      y: {
-                        beginAtZero: true,
-                        ticks: {
-                          stepSize: 1,
-                          precision: 0
-                        }
-                      },
-                      x: {
-                        ticks: {
-                          maxRotation: 15,
-                          minRotation: 15
-                        }
-                      }
-                    },
-                    plugins: {
-                      legend: {
-                        display: false
-                      },
-                      tooltip: {
-                        callbacks: {
-                          title: (context) => {
-                            const last7Days = [...stats.callsByDay]
-                              .sort((a, b) => new Date(b.date) - new Date(a.date))
-                              .slice(0, 7)
-                              .reverse();
-                            const date = new Date(last7Days[context[0].dataIndex].date);
-                            return date.toLocaleDateString('fr-FR', {
-                              weekday: 'long',
-                              day: '2-digit', 
-                              month: 'long'
-                            });
-                          }
-                        }
-                      }
-                    }
-                  }}
-                />
               </div>
             </div>
 
