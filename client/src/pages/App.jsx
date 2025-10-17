@@ -54,6 +54,7 @@ function App() {
     if (canSelectTenant) {
       loadTenants();
     }
+    loadQuickSuggestions(); // Charger les suggestions rapides au montage
   }, []);
 
   useEffect(() => {
@@ -272,7 +273,7 @@ function App() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">⚡ Ajout Rapide</h2>
+              <h2 className="text-xl font-bold text-gray-800">Ajout Rapide</h2>
               <button
                 onClick={() => setShowQuickForm(false)}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -294,11 +295,15 @@ function App() {
                   required
                 >
                   <option value="">Sélectionner...</option>
-                  {quickSuggestions.callers.map((item, index) => (
-                    <option key={index} value={item.name}>
-                      {item.name} ({item.count} utilisations)
-                    </option>
-                  ))}
+                  {quickSuggestions.callers.map((item, index) => {
+                    const name = typeof item === 'string' ? item : item.name;
+                    const count = typeof item === 'object' ? item.count : null;
+                    return (
+                      <option key={index} value={name}>
+                        {name}{count ? ` (${count} fois)` : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -313,11 +318,15 @@ function App() {
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Sélectionner...</option>
-                  {quickSuggestions.reasons.map((item, index) => (
-                    <option key={index} value={item.name}>
-                      {item.name} ({item.count} utilisations)
-                    </option>
-                  ))}
+                  {quickSuggestions.reasons.map((item, index) => {
+                    const name = typeof item === 'string' ? item : item.name;
+                    const count = typeof item === 'object' ? item.count : null;
+                    return (
+                      <option key={index} value={name}>
+                        {name}{count ? ` (${count} fois)` : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -334,11 +343,15 @@ function App() {
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Ajouter un tag...</option>
-                  {quickSuggestions.tags.map((item, index) => (
-                    <option key={index} value={item.name}>
-                      {item.name} ({item.count} utilisations)
-                    </option>
-                  ))}
+                  {quickSuggestions.tags.map((item, index) => {
+                    const name = typeof item === 'string' ? item : item.name;
+                    const count = typeof item === 'object' ? item.count : null;
+                    return (
+                      <option key={index} value={name}>
+                        {name}{count ? ` (${count} fois)` : ''}
+                      </option>
+                    );
+                  })}
                 </select>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {quickFormData.tags.map((tag, index) => (
@@ -412,13 +425,13 @@ function App() {
               onClick={() => navigate('/statistics')}
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
-              📊 Statistiques
+              Statistiques
             </button>
             <button
               onClick={() => navigate('/archives')}
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
-              📦 Archives
+              Archives
             </button>
             {canSelectTenant && tenants.length > 0 && (
               <select
@@ -426,7 +439,7 @@ function App() {
                 onChange={(e) => handleTenantChange(e.target.value)}
                 className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
               >
-                <option value="all">🌍 Tous les tenants</option>
+                <option value="all">Tous les tenants</option>
                 {tenants.map(tenant => (
                   <option key={tenant.id} value={tenant.id}>
                     {tenant.display_name}
@@ -472,13 +485,10 @@ function App() {
             <h2 className="text-2xl font-bold text-gray-800">Nouvel Appel</h2>
             <button
               type="button"
-              onClick={() => {
-                loadQuickSuggestions();
-                setShowQuickForm(true);
-              }}
+              onClick={() => setShowQuickForm(true)}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
             >
-              ⚡ Ajout Rapide
+              Ajout Rapide
             </button>
           </div>
           
@@ -763,10 +773,10 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
           .map(t => typeof t === 'string' ? t : t.name);
       }
       
-      console.log('🔍 Call complet:', call);
-      console.log('🏷️ call.tags brut:', call.tags);
-      console.log('🏷️ Type de call.tags:', typeof call.tags, Array.isArray(call.tags));
-      console.log('🏷️ Tags parsés pour editData:', parsedTags);
+      console.log('Call complet:', call);
+      console.log('call.tags brut:', call.tags);
+      console.log('Type de call.tags:', typeof call.tags, Array.isArray(call.tags));
+      console.log('Tags parsés pour editData:', parsedTags);
       
       setEditData({
         caller: call.caller_name,

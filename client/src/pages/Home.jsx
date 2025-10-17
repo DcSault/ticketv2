@@ -44,7 +44,7 @@ function Home() {
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-                  📞 Application
+                  Application
                 </h3>
                 <p className="text-gray-600">
                   Saisir des appels, consulter l'historique et gérer les tickets
@@ -63,7 +63,7 @@ function Home() {
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-                  📊 Statistiques
+                  Statistiques
                 </h3>
                 <p className="text-gray-600">
                   Consulter les statistiques et exporter les données
@@ -83,7 +83,7 @@ function Home() {
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-                    🛠️ Administration
+                    Administration
                   </h3>
                   <p className="text-gray-600">
                     Gérer les tenants, utilisateurs et consulter les statistiques globales

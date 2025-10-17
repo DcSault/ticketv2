@@ -190,13 +190,13 @@ function Archives() {
               onClick={() => navigate('/app')}
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
-              📞 Application
+              Application
             </button>
             <button
               onClick={() => navigate('/statistics')}
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
-              📊 Statistiques
+              Statistiques
             </button>
             {canSelectTenant && tenants.length > 0 && (
               <select
@@ -204,7 +204,7 @@ function Archives() {
                 onChange={(e) => handleTenantChange(e.target.value)}
                 className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
               >
-                <option value="all">🌍 Tous les tenants</option>
+                <option value="all">Tous les tenants</option>
                 {tenants.map(tenant => (
                   <option key={tenant.id} value={tenant.id}>
                     {tenant.display_name}

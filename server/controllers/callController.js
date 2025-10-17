@@ -537,9 +537,9 @@ exports.getQuickSuggestions = async (req, res) => {
     );
 
     res.json({
-      callers: callersResult.rows.map(row => row.name),
-      reasons: reasonsResult.rows.map(row => row.name),
-      tags: tagsResult.rows.map(row => row.name)
+      callers: callersResult.rows.map(row => ({ name: row.name, count: parseInt(row.count) })),
+      reasons: reasonsResult.rows.map(row => ({ name: row.name, count: parseInt(row.count) })),
+      tags: tagsResult.rows.map(row => ({ name: row.name, count: parseInt(row.count) }))
     });
   } catch (error) {
     console.error('Get quick suggestions error:', error);

@@ -66,7 +66,7 @@ function Admin() {
               onClick={() => navigate('/data-management')}
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
-              📋 Gestion des données
+              Gestion des données
             </button>
             <span className="text-gray-300">|</span>
             <span className="text-sm text-gray-600">
@@ -93,7 +93,7 @@ function Admin() {
                 : 'border-transparent text-gray-600 hover:text-gray-800'
             }`}
           >
-            🏢 Tenants
+            Tenants
           </button>
           <button
             onClick={() => setActiveTab('users')}
@@ -103,7 +103,7 @@ function Admin() {
                 : 'border-transparent text-gray-600 hover:text-gray-800'
             }`}
           >
-            👥 Utilisateurs
+            Utilisateurs
           </button>
           <button
             onClick={() => setActiveTab('import')}
@@ -113,7 +113,7 @@ function Admin() {
                 : 'border-transparent text-gray-600 hover:text-gray-800'
             }`}
           >
-            📥 Import Appels
+            Import Appels
           </button>
           <button
             onClick={() => setActiveTab('statistics')}
@@ -123,7 +123,7 @@ function Admin() {
                 : 'border-transparent text-gray-600 hover:text-gray-800'
             }`}
           >
-            📊 Statistiques Globales
+            Statistiques Globales
           </button>
         </div>
 
@@ -325,11 +325,11 @@ function ImportTab({ tenants, loadTenants }) {
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Importer des Appels (JSON)</h2>
       
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <h3 className="font-semibold text-blue-900 mb-2">ℹ️ Formats supportés :</h3>
+        <h3 className="font-semibold text-blue-900 mb-2">Formats supportés :</h3>
         
         <div className="space-y-3">
           <div>
-            <p className="text-sm font-medium text-blue-800 mb-1">✅ Format nouveau (CallFixV2) :</p>
+            <p className="text-sm font-medium text-blue-800 mb-1">Format nouveau (CallFixV2) :</p>
             <pre className="bg-white p-3 rounded text-xs overflow-x-auto">
 {`[
   {
@@ -346,7 +346,7 @@ function ImportTab({ tenants, loadTenants }) {
           </div>
 
           <div>
-            <p className="text-sm font-medium text-blue-800 mb-1">✅ Format ancien (v2.0.7) :</p>
+            <p className="text-sm font-medium text-blue-800 mb-1">Format ancien (v2.0.7) :</p>
             <pre className="bg-white p-3 rounded text-xs overflow-x-auto">
 {`{
   "metadata": { "version": "2.0.7", ... },
@@ -368,7 +368,7 @@ function ImportTab({ tenants, loadTenants }) {
 
           <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
             <p className="text-xs text-green-800">
-              💡 <strong>Conversion automatique :</strong> Les exports de l'ancienne version sont automatiquement 
+              <strong>Conversion automatique :</strong> Les exports de l'ancienne version sont automatiquement 
               convertis lors de l'import. Les tickets archivés sont ignorés.
             </p>
           </div>
@@ -415,7 +415,7 @@ function ImportTab({ tenants, loadTenants }) {
           />
           {file && (
             <p className="mt-2 text-sm text-gray-600">
-              📄 Fichier sélectionné : <span className="font-medium">{file.name}</span>
+              Fichier sélectionné : <span className="font-medium">{file.name}</span>
             </p>
           )}
         </div>
@@ -425,7 +425,7 @@ function ImportTab({ tenants, loadTenants }) {
           disabled={!file || !selectedTenant || importing}
           className="btn btn-primary w-full"
         >
-          {importing ? '⏳ Import en cours...' : '📥 Importer les appels'}
+          {importing ? 'Import en cours...' : 'Importer les appels'}
         </button>
 
         {result && (
@@ -437,17 +437,17 @@ function ImportTab({ tenants, loadTenants }) {
             <p className={`font-semibold ${
               result.success ? 'text-green-900' : 'text-red-900'
             }`}>
-              {result.success ? '✅ ' : '❌ '}{result.message}
+              {result.message}
             </p>
             {result.details && (
               <div className="mt-2 text-sm text-gray-700">
                 <p>• Total analysé : {result.details.total}</p>
-                <p>• ✅ Appels importés : {result.details.imported}</p>
+                <p>• Appels importés : {result.details.imported}</p>
                 {result.details.duplicates > 0 && (
-                  <p>• 🔄 Doublons ignorés : {result.details.duplicates}</p>
+                  <p>• Doublons ignorés : {result.details.duplicates}</p>
                 )}
                 {(result.details.skipped - (result.details.duplicates || 0)) > 0 && (
-                  <p>• ⚠️ Erreurs : {result.details.skipped - (result.details.duplicates || 0)}</p>
+                  <p>• Erreurs : {result.details.skipped - (result.details.duplicates || 0)}</p>
                 )}
                 {result.details.errors?.length > 0 && (
                   <div className="mt-2">
@@ -774,7 +774,7 @@ function UserModal({ user, tenants, onClose, onSave }) {
                 className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700">
-                🔓 Connexion sans mot de passe
+                Connexion sans mot de passe
               </span>
             </label>
             <p className="text-xs text-gray-500 ml-6 mb-3">
@@ -849,7 +849,7 @@ function UserModal({ user, tenants, onClose, onSave }) {
               </select>
               {formData.role === 'viewer' && (
                 <p className="text-xs text-gray-500 mt-1">
-                  ℹ️ Laissez vide pour un accès à tous les tenants, ou choisissez un tenant spécifique
+                  Laissez vide pour un accès à tous les tenants, ou choisissez un tenant spécifique
                 </p>
               )}
             </div>

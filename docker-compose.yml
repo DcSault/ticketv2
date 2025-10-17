@@ -19,15 +19,15 @@ services:
         npm install --production=false &&
         echo "📦 Installing client dependencies..." &&
         cd client && npm install --production=false && cd .. &&
-        echo "🏗️  Building frontend for production..." &&
+        echo 'Building frontend for production...' &&
         cd client && npm run build && cd .. &&
-        echo "✅ Verifying build..." &&
+        echo 'Verifying build...' &&
         ls -la /app/client/dist/ &&
-        echo "🗄️  Waiting for database..." &&
+        echo 'Waiting for database...' &&
         sleep 5 &&
-        echo "🔧 Setting up database..." &&
+        echo 'Setting up database...' &&
         node server/scripts/setup-db.js &&
-        echo "🚀 Starting application..." &&
+        echo 'Starting application...' &&
         npm start
       '
     ports:

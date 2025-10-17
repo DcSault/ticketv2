@@ -446,8 +446,8 @@ exports.importCalls = async (req, res) => {
     let calls = [];
     if (jsonData.metadata && jsonData.data && jsonData.data.tickets) {
       // Format ancien: {metadata: {...}, data: {tickets: [...], users: [...], ...}}
-      console.log(`📦 Ancien format détecté (v${jsonData.metadata.version || 'inconnue'})`);
-      console.log(`📊 ${jsonData.data.tickets.length} tickets à convertir`);
+      console.log(`Ancien format détecté (v${jsonData.metadata.version || 'inconnue'})`);
+      console.log(`${jsonData.data.tickets.length} tickets à convertir`);
       
       // Convertir les tickets en calls (on garde les archivés aussi)
       calls = jsonData.data.tickets.map(ticket => ({

@@ -177,13 +177,13 @@ function Statistics() {
               onClick={() => navigate('/app')}
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
-              📞 Application
+              Application
             </button>
             <button
               onClick={() => navigate('/archives')}
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
-              📦 Archives
+              Archives
             </button>
             {canSelectTenant && tenants.length > 0 && (
               <select
@@ -191,7 +191,7 @@ function Statistics() {
                 onChange={(e) => handleTenantChange(e.target.value)}
                 className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
               >
-                <option value="all">🌍 Tous les tenants</option>
+                <option value="all">Tous les tenants</option>
                 {tenants.map(tenant => (
                   <option key={tenant.id} value={tenant.id}>
                     {tenant.display_name}
@@ -345,7 +345,7 @@ function Statistics() {
               }`}
               disabled={showAdvanced}
             >
-              📊 Ce mois
+              Ce mois
             </button>
             <button
               onClick={() => {
@@ -361,7 +361,7 @@ function Statistics() {
               }`}
               disabled={showAdvanced}
             >
-              📈 Cette année
+              Cette année
             </button>
             
             {/* Séparateur */}
@@ -473,7 +473,7 @@ function Statistics() {
             {/* Graphique horaire (pour aujourd'hui et hier) - Courbe */}
             {stats.callsByHour && stats.callsByHour.length > 0 && (
               <div className="card mb-8">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Évolution heure par heure</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Évolution heure par heure</h3>
                 <div style={{ height: '300px' }}>
                   <Line
                     data={{

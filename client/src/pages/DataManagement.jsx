@@ -155,13 +155,13 @@ function DataManagement() {
                       onClick={() => handleEdit(item, type)}
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
                     >
-                      ✏️ Modifier
+                      Modifier
                     </button>
                     <button
                       onClick={() => handleDelete(item, type)}
                       className="text-red-600 hover:text-red-800 text-sm font-medium"
                     >
-                      🗑️ Supprimer
+                      Supprimer
                     </button>
                   </td>
                 </tr>
@@ -207,14 +207,14 @@ function DataManagement() {
               onClick={() => navigate('/app')}
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
-              📞 Application
+              Application
             </button>
             {user?.role === 'global_admin' && (
               <button
                 onClick={() => navigate('/admin')}
                 className="text-sm text-gray-600 hover:text-blue-600 font-medium"
               >
-                🛠️ Admin
+                Admin
               </button>
             )}
             {user?.role === 'tenant_admin' && (
@@ -222,7 +222,7 @@ function DataManagement() {
                 onClick={() => navigate('/admin-tenant')}
                 className="text-sm text-gray-600 hover:text-blue-600 font-medium"
               >
-                👥 Admin Tenant
+                Admin Tenant
               </button>
             )}
             <span className="text-gray-300">|</span>
@@ -249,7 +249,7 @@ function DataManagement() {
                   : 'border-transparent text-gray-600 hover:text-gray-800'
               }`}
             >
-              👤 Appelants ({callers.length})
+              Appelants ({callers.length})
             </button>
             <button
               onClick={() => setActiveTab('reasons')}
@@ -259,7 +259,7 @@ function DataManagement() {
                   : 'border-transparent text-gray-600 hover:text-gray-800'
               }`}
             >
-              📝 Raisons ({reasons.length})
+              Raisons ({reasons.length})
             </button>
             <button
               onClick={() => setActiveTab('tags')}
@@ -269,15 +269,15 @@ function DataManagement() {
                   : 'border-transparent text-gray-600 hover:text-gray-800'
               }`}
             >
-              🏷️ Tags ({tags.length})
+              Tags ({tags.length})
             </button>
           </nav>
         </div>
 
         {/* Contenu */}
-        {activeTab === 'callers' && renderTable(callers, 'callers', '👤')}
-        {activeTab === 'reasons' && renderTable(reasons, 'reasons', '📝')}
-        {activeTab === 'tags' && renderTable(tags, 'tags', '🏷️')}
+        {activeTab === 'callers' && renderTable(callers, 'callers', '')}
+        {activeTab === 'reasons' && renderTable(reasons, 'reasons', '')}
+        {activeTab === 'tags' && renderTable(tags, 'tags', '')}
       </div>
 
       {/* Modal */}
@@ -328,7 +328,7 @@ function DataManagement() {
                 {selectedItem?.usage_count > 0 && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
                     <p className="text-sm text-yellow-800">
-                      ⚠️ Attention : Cet élément est utilisé dans <strong>{selectedItem.usage_count}</strong> appel{selectedItem.usage_count > 1 ? 's' : ''}.
+                      Attention : Cet élément est utilisé dans <strong>{selectedItem.usage_count}</strong> appel{selectedItem.usage_count > 1 ? 's' : ''}.
                       {selectedItem.type === 'callers' && ' Le nom de l\'appelant sera supprimé des appels concernés.'}
                       {selectedItem.type === 'reasons' && ' Le nom de la raison sera supprimé des appels concernés.'}
                       {selectedItem.type === 'tags' && ' Le tag sera retiré des appels concernés.'}
