@@ -5,7 +5,7 @@ import { authService } from './services/api';
 // Pages
 import Login from './pages/Login';
 import Home from './pages/Home';
-import App from './pages/AppWin98';
+import App from './pages/App';
 import Statistics from './pages/Statistics';
 import Admin from './pages/Admin';
 import AdminTenant from './pages/AdminTenant';
