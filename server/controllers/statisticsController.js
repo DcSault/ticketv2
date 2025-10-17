@@ -83,16 +83,32 @@ exports.getStatistics = async (req, res) => {
       params
     );
 
-    // Appels par jour (pour les graphiques, incluant les archivés)
-    const callsByDayResult = await pool.query(
-      `SELECT DATE(created_at) as date, COUNT(*) as count
-       FROM calls
-       WHERE tenant_id = $1 ${dateFilter}
-       GROUP BY DATE(created_at)
-       ORDER BY date DESC
-       LIMIT 30`,
-      params
-    );
+    // Appels par jour OU par mois (pour les graphiques, incluant les archivés)
+    let callsByDayResult;
+    if (period === 'year' && !startDate) {
+      // Pour l'année, grouper par mois
+      callsByDayResult = await pool.query(
+        `SELECT 
+          TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') as date,
+          COUNT(*) as count
+         FROM calls
+         WHERE tenant_id = $1 ${dateFilter}
+         GROUP BY DATE_TRUNC('month', created_at)
+         ORDER BY date ASC`,
+        params
+      );
+    } else {
+      // Pour les autres périodes, grouper par jour
+      callsByDayResult = await pool.query(
+        `SELECT DATE(created_at) as date, COUNT(*) as count
+         FROM calls
+         WHERE tenant_id = $1 ${dateFilter}
+         GROUP BY DATE(created_at)
+         ORDER BY date DESC
+         LIMIT 30`,
+        params
+      );
+    }
 
     // Appels par heure (uniquement si période = jour actuel)
     let callsByHourResult = null;

@@ -147,7 +147,7 @@ function Statistics() {
               onClick={() => navigate('/')}
               className="text-2xl font-bold text-gray-800 hover:text-blue-600"
             >
-              ← TicketV2
+              ← CallFixV2
             </button>
             <span className="text-gray-300">|</span>
             <span className="text-gray-600">Statistiques</span>
@@ -214,6 +214,79 @@ function Statistics() {
         <div className="card mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Filtres</h2>
           
+          {/* Boutons de raccourcis */}
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <button
+              onClick={() => {
+                setPeriod('day');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                period === 'day' && !startDate && !endDate
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              📅 Aujourd'hui
+            </button>
+            <button
+              onClick={() => {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+                setPeriod('day');
+                setStartDate(yesterdayStr);
+                setEndDate(yesterdayStr);
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200`}
+            >
+              ⏮️ Hier
+            </button>
+            <button
+              onClick={() => {
+                setPeriod('week');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                period === 'week' && !startDate && !endDate
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              📆 Cette semaine
+            </button>
+            <button
+              onClick={() => {
+                setPeriod('month');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                period === 'month' && !startDate && !endDate
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              📊 Ce mois
+            </button>
+            <button
+              onClick={() => {
+                setPeriod('year');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                period === 'year' && !startDate && !endDate
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              📈 Cette année
+            </button>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -297,19 +370,25 @@ function Statistics() {
               </div>
             </div>
 
-            {/* Graphique horaire (uniquement pour aujourd'hui) */}
+            {/* Graphique horaire (uniquement pour aujourd'hui) - Courbe */}
             {stats.callsByHour && stats.callsByHour.length > 0 && (
               <div className="card mb-8">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Appels par heure (Aujourd'hui)</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Évolution heure par heure (Aujourd'hui)</h3>
                 <div style={{ height: '300px' }}>
-                  <Bar
+                  <Line
                     data={{
                       labels: stats.callsByHour.map(item => `${item.hour}h`),
                       datasets: [{
                         label: 'Appels',
                         data: stats.callsByHour.map(item => item.count),
-                        backgroundColor: '#3B82F6',
-                        borderRadius: 8,
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#3B82F6',
+                        fill: true,
                       }]
                     }}
                     options={{
@@ -340,11 +419,12 @@ function Statistics() {
               </div>
             )}
 
-            {/* Graphique principal: Évolution des appels (par jour) */}
-            {stats.callsByDay && stats.callsByDay.length > 0 && (
+            {/* Graphique principal: Évolution des appels (par jour OU par mois) */}
+            {/* Ne pas afficher pour "aujourd'hui" ou "hier" (déjà affiché en heure par heure) */}
+            {stats.callsByDay && stats.callsByDay.length > 0 && !stats.callsByHour && (
               <div className="card mb-8">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">
-                  {stats.callsByHour ? 'Évolution sur la période' : 'Évolution des appels'}
+                  {period === 'year' && !startDate ? 'Évolution mensuelle' : 'Évolution des appels'}
                 </h3>
                 <div style={{ height: '400px' }}>
                   <Line
@@ -352,6 +432,13 @@ function Statistics() {
                       labels: [...stats.callsByDay]
                         .sort((a, b) => new Date(a.date) - new Date(b.date))
                         .map(item => {
+                          // Si c'est une année (format YYYY-MM), afficher le mois
+                          if (period === 'year' && !startDate && item.date.match(/^\d{4}-\d{2}$/)) {
+                            const [year, month] = item.date.split('-');
+                            const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+                            return monthNames[parseInt(month) - 1] + ' ' + year;
+                          }
+                          // Sinon afficher le jour
                           const d = new Date(item.date);
                           return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
                         }),
@@ -395,7 +482,17 @@ function Statistics() {
                           callbacks: {
                             title: (context) => {
                               const sortedData = [...stats.callsByDay].sort((a, b) => new Date(a.date) - new Date(b.date));
-                              const date = new Date(sortedData[context[0].dataIndex].date);
+                              const dateStr = sortedData[context[0].dataIndex].date;
+                              
+                              // Si c'est un format YYYY-MM (mois)
+                              if (dateStr.match(/^\d{4}-\d{2}$/)) {
+                                const [year, month] = dateStr.split('-');
+                                const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+                                return monthNames[parseInt(month) - 1] + ' ' + year;
+                              }
+                              
+                              // Sinon c'est une date normale
+                              const date = new Date(dateStr);
                               return date.toLocaleDateString('fr-FR', { 
                                 weekday: 'long',
                                 day: '2-digit', 
