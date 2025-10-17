@@ -161,6 +161,21 @@ function App() {
             <span className="text-gray-600">Application</span>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/statistics')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              📊 Statistiques
+            </button>
+            {user?.role === 'global_admin' && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+              >
+                🛠️ Admin
+              </button>
+            )}
+            <span className="text-gray-300">|</span>
             <span className="text-sm text-gray-600">
               {user?.fullName || user?.username}
             </span>
