@@ -266,31 +266,38 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Quick Add Modal */}
       {showQuickForm && user?.role !== 'viewer' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">⚡ Ajout Rapide</h2>
+        <div className="modal-overlay animate-fade-in">
+          <div className="modal animate-scale-in">
+            <div className="modal-header">
+              <div className="flex items-center gap-3">
+                <div className="icon-box icon-box-green">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-slate-100">Ajout Rapide</h2>
+              </div>
               <button
                 onClick={() => setShowQuickForm(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-slate-400 hover:text-slate-200 text-2xl transition-colors"
               >
                 ×
               </button>
             </div>
 
-            <form onSubmit={handleQuickSubmit} className="space-y-4">
+            <form onSubmit={handleQuickSubmit} className="modal-body space-y-4">
               {/* Caller */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Appelant *
                 </label>
                 <select
                   value={quickFormData.caller}
                   onChange={(e) => setQuickFormData({ ...quickFormData, caller: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="select"
                   required
                 >
                   <option value="">Sélectionner...</option>
@@ -304,13 +311,13 @@ function App() {
 
               {/* Reason */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Raison
                 </label>
                 <select
                   value={quickFormData.reason}
                   onChange={(e) => setQuickFormData({ ...quickFormData, reason: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="select"
                 >
                   <option value="">Sélectionner...</option>
                   {quickSuggestions.reasons.map((item, index) => (
@@ -323,7 +330,7 @@ function App() {
 
               {/* Tags */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Tags
                 </label>
                 <select
@@ -331,7 +338,7 @@ function App() {
                     addQuickTag(e.target.value);
                     e.target.value = '';
                   }}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="select"
                 >
                   <option value="">Ajouter un tag...</option>
                   {quickSuggestions.tags.map((item, index) => (
@@ -340,17 +347,17 @@ function App() {
                     </option>
                   ))}
                 </select>
-                <div className="flex flex-wrap gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-3">
                   {quickFormData.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                      className="badge badge-blue"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeQuickTag(tag)}
-                        className="text-blue-600 hover:text-blue-800 font-bold"
+                        className="hover:text-blue-100 font-bold"
                       >
                         ×
                       </button>
@@ -360,33 +367,32 @@ function App() {
               </div>
 
               {/* Blocking */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pt-2">
                 <input
                   type="checkbox"
                   id="quickBlocking"
                   checked={quickFormData.isBlocking}
                   onChange={(e) => setQuickFormData({ ...quickFormData, isBlocking: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
                 />
-                <label htmlFor="quickBlocking" className="text-sm text-gray-700">
+                <label htmlFor="quickBlocking" className="text-sm text-slate-300">
                   Appel bloquant
                 </label>
               </div>
 
-              {/* Submit */}
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 font-medium"
-                >
-                  Créer
-                </button>
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={() => setShowQuickForm(false)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 font-medium"
+                  className="btn btn-secondary"
                 >
                   Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-success"
+                >
+                  Créer
                 </button>
               </div>
             </form>
@@ -395,71 +401,106 @@ function App() {
       )}
 
       {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-2xl font-bold text-gray-800 hover:text-blue-600"
-            >
-              ← CallFixV2
-            </button>
-            <span className="text-gray-300">|</span>
-            <span className="text-gray-600">Application</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/statistics')}
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-            >
-              📊 Statistiques
-            </button>
-            <button
-              onClick={() => navigate('/archives')}
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-            >
-              📦 Archives
-            </button>
-            {canSelectTenant && tenants.length > 0 && (
-              <select
-                value={selectedTenant || 'all'}
-                onChange={(e) => handleTenantChange(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">🌍 Tous les tenants</option>
-                {tenants.map(tenant => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {tenant.display_name}
-                  </option>
-                ))}
-              </select>
-            )}
-            {user?.role === 'global_admin' && (
+      <nav className="nav">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate('/admin')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                onClick={() => navigate('/')}
+                className="flex items-center gap-3 text-slate-100 hover:text-blue-400 transition-colors group"
               >
-                🛠️ Admin
+                <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                  </div>
+                  <span className="text-xl font-bold">CallFixV2</span>
+                </div>
               </button>
-            )}
-            {user?.role === 'tenant_admin' && (
+              <span className="text-slate-700">|</span>
+              <span className="text-slate-400">Application</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate('/admin-tenant')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                onClick={() => navigate('/statistics')}
+                className="nav-button"
               >
-                👥 Admin Tenant
+                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Statistiques
               </button>
-            )}
-            <span className="text-gray-300">|</span>
-            <span className="text-sm text-gray-600">
-              {user?.fullName || user?.username}
-            </span>
-            <button
-              onClick={() => authService.logout()}
-              className="btn btn-secondary text-sm"
-            >
-              Déconnexion
-            </button>
+              <button
+                onClick={() => navigate('/archives')}
+                className="nav-button"
+              >
+                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                Archives
+              </button>
+              
+              {canSelectTenant && tenants.length > 0 && (
+                <select
+                  value={selectedTenant || 'all'}
+                  onChange={(e) => handleTenantChange(e.target.value)}
+                  className="select text-sm py-2"
+                >
+                  <option value="all">Tous les tenants</option>
+                  {tenants.map(tenant => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.display_name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              
+              {user?.role === 'global_admin' && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="nav-button"
+                >
+                  <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Admin
+                </button>
+              )}
+              
+              {user?.role === 'tenant_admin' && (
+                <button
+                  onClick={() => navigate('/admin-tenant')}
+                  className="nav-button"
+                >
+                  <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  Admin Tenant
+                </button>
+              )}
+              
+              <span className="text-slate-700">|</span>
+              
+              <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg">
+                <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  {(user?.fullName || user?.username).charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm text-slate-200">{user?.fullName || user?.username}</span>
+              </div>
+              
+              <button
+                onClick={() => authService.logout()}
+                className="btn btn-secondary text-sm"
+              >
+                Déconnexion
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -467,31 +508,42 @@ function App() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Form - Hidden for viewers */}
         {user?.role !== 'viewer' && (
-        <div className="card mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Nouvel Appel</h2>
+        <div className="card mb-8 animate-fade-in">
+          <div className="card-header">
+            <div className="flex items-center gap-3">
+              <div className="icon-box icon-box-blue">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <h2 className="card-title">Nouvel Appel</h2>
+            </div>
             <button
               type="button"
               onClick={() => {
                 loadQuickSuggestions();
                 setShowQuickForm(true);
               }}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+              className="btn btn-success flex items-center gap-2"
             >
-              ⚡ Ajout Rapide
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Ajout Rapide
             </button>
           </div>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
               {/* Appelant */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Appelant *
                 </label>
                 <input
                   type="text"
                   className="input"
+                  placeholder="Entrez le nom de l'appelant..."
                   value={formData.caller}
                   onChange={(e) => {
                     setFormData({ ...formData, caller: e.target.value });
@@ -502,14 +554,14 @@ function App() {
                   required
                 />
                 {showCallerSuggestions && callerSuggestions.length > 0 && formData.caller && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto animate-fade-in">
                     {callerSuggestions
                       .filter(s => s.toLowerCase().includes(formData.caller.toLowerCase()))
                       .map((suggestion, idx) => (
                         <button
                           key={idx}
                           type="button"
-                          className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                          className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                           onClick={() => {
                             setFormData({ ...formData, caller: suggestion });
                             setShowCallerSuggestions(false);
@@ -525,12 +577,13 @@ function App() {
               {/* Raison */}
               {!formData.isGlpi && (
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
                     Raison
                   </label>
                   <input
                     type="text"
                     className="input"
+                    placeholder="Entrez la raison de l'appel..."
                     value={formData.reason}
                     onChange={(e) => {
                       setFormData({ ...formData, reason: e.target.value });
@@ -540,14 +593,14 @@ function App() {
                     onBlur={() => setTimeout(() => setShowReasonSuggestions(false), 200)}
                   />
                   {showReasonSuggestions && reasonSuggestions.length > 0 && formData.reason && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto animate-fade-in">
                       {reasonSuggestions
                         .filter(s => s.toLowerCase().includes(formData.reason.toLowerCase()))
                         .map((suggestion, idx) => (
                           <button
                             key={idx}
                             type="button"
-                            className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                            className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                             onClick={() => {
                               setFormData({ ...formData, reason: suggestion });
                               setShowReasonSuggestions(false);
@@ -565,20 +618,20 @@ function App() {
             {/* Tags */}
             {!formData.isGlpi && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Tags
                 </label>
-                <div className="flex flex-wrap gap-2 mb-2">
+                <div className="flex flex-wrap gap-2 mb-3">
                   {formData.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                      className="badge badge-blue"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="hover:text-blue-600"
+                        className="hover:text-blue-100"
                       >
                         ×
                       </button>
@@ -589,6 +642,7 @@ function App() {
                   <input
                     type="text"
                     className="input"
+                    placeholder="Ajoutez des tags..."
                     value={currentTag}
                     onChange={(e) => {
                       setCurrentTag(e.target.value);
@@ -602,17 +656,16 @@ function App() {
                     }}
                     onFocus={() => setShowTagSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
-                    placeholder="Ajouter un tag..."
                   />
                   {showTagSuggestions && tagSuggestions.length > 0 && currentTag && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto animate-fade-in">
                       {tagSuggestions
                         .filter(s => s.toLowerCase().includes(currentTag.toLowerCase()))
                         .map((suggestion, idx) => (
                           <button
                             key={idx}
                             type="button"
-                            className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                            className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                             onClick={() => addTag(suggestion)}
                           >
                             {suggestion}
@@ -626,7 +679,7 @@ function App() {
 
             {/* Checkboxes */}
             <div className="flex flex-wrap gap-6">
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
                   checked={formData.isGlpi}
@@ -636,25 +689,25 @@ function App() {
                     reason: e.target.checked ? '' : formData.reason,
                     tags: e.target.checked ? [] : formData.tags
                   })}
-                  className="w-5 h-5"
+                  className="w-5 h-5 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm font-medium text-gray-700">Ticket GLPI</span>
+                <span className="text-sm font-medium text-slate-300 group-hover:text-slate-100 transition-colors">Ticket GLPI</span>
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
                   checked={formData.isBlocking}
                   onChange={(e) => setFormData({ ...formData, isBlocking: e.target.checked })}
-                  className="w-5 h-5"
+                  className="w-5 h-5 text-red-600 bg-slate-700 border-slate-600 rounded focus:ring-red-500"
                 />
-                <span className="text-sm font-medium text-gray-700">Bloquant</span>
+                <span className="text-sm font-medium text-slate-300 group-hover:text-slate-100 transition-colors">Bloquant</span>
               </label>
             </div>
 
             {formData.isGlpi && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="animate-fade-in">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Numéro GLPI
                 </label>
                 <input
@@ -667,7 +720,10 @@ function App() {
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn btn-primary w-full md:w-auto">
+              <svg className="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
               Enregistrer l'appel
             </button>
           </form>
@@ -675,36 +731,55 @@ function App() {
         )}
 
         {/* Liste des appels */}
-        <div className="card">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Appels d'aujourd'hui ({calls.length})
-            </h2>
+        <div className="card animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="card-header">
+            <div className="flex items-center gap-3">
+              <div className="icon-box icon-box-purple">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="card-title">Appels d'aujourd'hui</h2>
+                <p className="text-slate-400 text-sm">{calls.length} appel{calls.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
             <button
               onClick={() => navigate('/archives')}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              className="btn btn-secondary"
             >
-              📦 Voir les appels précédents
+              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+              Archives
             </button>
           </div>
 
           {loading ? (
-            <p className="text-gray-600">Chargement...</p>
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-blue-500"></div>
+              <p className="text-slate-400 mt-4">Chargement...</p>
+            </div>
           ) : calls.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-600 mb-2">Aucun appel aujourd'hui</p>
-              <p className="text-sm text-gray-500">
+            <div className="text-center py-12">
+              <div className="inline-block p-4 bg-slate-700/30 rounded-2xl mb-4">
+                <svg className="w-16 h-16 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                </svg>
+              </div>
+              <p className="text-slate-300 mb-2 text-lg font-medium">Aucun appel aujourd'hui</p>
+              <p className="text-sm text-slate-500">
                 Les appels des jours précédents sont dans les{' '}
                 <button
                   onClick={() => navigate('/archives')}
-                  className="text-blue-600 hover:underline font-medium"
+                  className="text-blue-400 hover:text-blue-300 font-medium hover:underline"
                 >
                   Archives
                 </button>
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {calls.map((call) => (
                 <CallItem
                   key={call.id}
@@ -827,7 +902,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
           
           {/* Appelant avec autocomplétion */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Appelant</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Appelant</label>
             <input
               type="text"
               className="input text-sm"
@@ -840,14 +915,14 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
               onBlur={() => setTimeout(() => setShowCallerSuggestions(false), 200)}
             />
             {showCallerSuggestions && callerSuggestions.length > 0 && editData.caller && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+              <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-40 overflow-y-auto animate-fade-in">
                 {callerSuggestions
                   .filter(s => s.toLowerCase().includes(editData.caller.toLowerCase()))
                   .map((suggestion, idx) => (
                     <button
                       key={idx}
                       type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                      className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700/50 transition-colors text-sm first:rounded-t-xl last:rounded-b-xl"
                       onClick={() => {
                         setEditData({ ...editData, caller: suggestion });
                         setShowCallerSuggestions(false);
@@ -863,7 +938,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
           {/* Raison avec autocomplétion */}
           {!editData.isGlpi && (
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Raison</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Raison</label>
               <input
                 type="text"
                 className="input text-sm"
@@ -876,14 +951,14 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
                 onBlur={() => setTimeout(() => setShowReasonSuggestions(false), 200)}
               />
               {showReasonSuggestions && reasonSuggestions.length > 0 && editData.reason && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-40 overflow-y-auto animate-fade-in">
                   {reasonSuggestions
                     .filter(s => s.toLowerCase().includes(editData.reason.toLowerCase()))
                     .map((suggestion, idx) => (
                       <button
                         key={idx}
                         type="button"
-                        className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                        className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700/50 transition-colors text-sm first:rounded-t-xl last:rounded-b-xl"
                         onClick={() => {
                           setEditData({ ...editData, reason: suggestion });
                           setShowReasonSuggestions(false);
@@ -900,7 +975,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
           {/* Tags avec autocomplétion */}
           {!editData.isGlpi && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Tags {editData.tags.length > 0 && `(${editData.tags.length})`}
               </label>
               <div className="flex flex-wrap gap-2 mb-2">
@@ -908,20 +983,20 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
                   editData.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                      className="badge badge-blue"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="hover:text-blue-600"
+                        className="hover:text-blue-100"
                       >
                         ×
                       </button>
                     </span>
                   ))
                 ) : (
-                  <span className="text-xs text-gray-400">Aucun tag</span>
+                  <span className="text-xs text-slate-500">Aucun tag</span>
                 )}
               </div>
               <div className="relative">
@@ -964,8 +1039,8 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
           )}
 
           {/* Checkboxes */}
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
+          <div className="flex flex-wrap gap-6">
+            <label className="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={editData.isGlpi}
@@ -975,25 +1050,25 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
                   reason: e.target.checked ? '' : editData.reason,
                   tags: e.target.checked ? [] : editData.tags
                 })}
-                className="w-4 h-4"
+                className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
               />
-              <span className="text-sm font-medium text-gray-700">Ticket GLPI</span>
+              <span className="text-sm font-medium text-slate-300 group-hover:text-slate-100 transition-colors">Ticket GLPI</span>
             </label>
 
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={editData.isBlocking}
                 onChange={(e) => setEditData({ ...editData, isBlocking: e.target.checked })}
-                className="w-4 h-4"
+                className="w-4 h-4 text-red-600 bg-slate-700 border-slate-600 rounded focus:ring-red-500"
               />
-              <span className="text-sm font-medium text-gray-700">Bloquant</span>
+              <span className="text-sm font-medium text-slate-300 group-hover:text-slate-100 transition-colors">Bloquant</span>
             </label>
           </div>
 
           {editData.isGlpi && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="animate-fade-in">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Numéro GLPI
               </label>
               <input
@@ -1026,33 +1101,42 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start">
+    <div className="bg-slate-700/20 border border-slate-700/50 rounded-xl p-5 hover:bg-slate-700/30 hover:border-slate-600/50 transition-all duration-300">
+      <div className="flex justify-between items-start gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-sm font-medium text-gray-500">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-sm font-medium text-slate-400">
+              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               {formatDate(call.created_at)}
             </span>
-            <span className="text-sm text-gray-400">•</span>
-            <span className="text-sm text-gray-500 capitalize">
+            <span className="text-slate-600">•</span>
+            <span className="text-sm text-slate-400 capitalize">
               {getDayName(call.created_at)}
             </span>
             {call.is_blocking && (
-              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+              <span className="badge badge-red">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                </svg>
                 Bloquant
               </span>
             )}
             {call.is_glpi && (
-              <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+              <span className="badge badge-purple">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
                 GLPI {call.glpi_number && `- ${call.glpi_number}`}
               </span>
             )}
           </div>
-          <p className="text-lg font-semibold text-gray-800 mb-1">
+          <p className="text-xl font-semibold text-slate-100 mb-2">
             {call.caller_name}
           </p>
           {call.reason_name && (
-            <p className="text-gray-600 mb-2">{call.reason_name}</p>
+            <p className="text-slate-300 mb-3">{call.reason_name}</p>
           )}
           {call.tags && Array.isArray(call.tags) && call.tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -1061,7 +1145,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
                 .map((tag, idx) => (
                   <span
                     key={idx}
-                    className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                    className="badge badge-blue"
                   >
                     {typeof tag === 'string' ? tag : tag.name}
                   </span>
@@ -1070,24 +1154,33 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
           )}
         </div>
         {authService.getCurrentUser()?.role !== 'viewer' && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={onEdit}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all"
+            title="Modifier"
           >
-            Modifier
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
           </button>
           <button
             onClick={onArchive}
-            className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+            className="p-2 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10 rounded-lg transition-all"
+            title="Archiver"
           >
-            📦 Archiver
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
           </button>
           <button
             onClick={onDelete}
-            className="text-red-600 hover:text-red-800 text-sm font-medium"
+            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
+            title="Supprimer"
           >
-            Supprimer
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
           </button>
         </div>
         )}
