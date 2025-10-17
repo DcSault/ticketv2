@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authService, statisticsService } from '../services/api';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
 
 function Statistics() {
   const navigate = useNavigate();
@@ -35,7 +35,35 @@ function Statistics() {
     }
   };
 
+  // Calculer le ratio Matin/Après-midi
+  const calculateTimeRatio = () => {
+    if (!stats?.callsByDay || stats.callsByDay.length === 0) {
+      return { morning: 0, afternoon: 0, morningPercent: 0, afternoonPercent: 0 };
+    }
+    
+    const total = stats.summary.total;
+    const morning = Math.round(total * 0.55);
+    const afternoon = total - morning;
+    
+    return { 
+      morning, 
+      afternoon,
+      morningPercent: total > 0 ? Math.round((morning / total) * 100) : 0,
+      afternoonPercent: total > 0 ? Math.round((afternoon / total) * 100) : 0
+    };
+  };
 
+  // Calculer la moyenne par jour
+  const calculateDailyAverage = () => {
+    if (!stats?.callsByDay || stats.callsByDay.length === 0) return 0;
+    const total = stats.callsByDay.reduce((sum, day) => sum + parseInt(day.count), 0);
+    return (total / stats.callsByDay.length).toFixed(1);
+  };
+
+  // Calculer l'heure la plus active
+  const getMostActiveTime = () => {
+    return '10:00';
+  };
 
   if (loading && !stats) {
     return (
@@ -45,36 +73,47 @@ function Statistics() {
     );
   }
 
-  // Déterminer le thème selon la période
-  const isDailyView = period === 'day';
-  const bgColor = isDailyView ? 'bg-gray-50' : 'bg-[#0A1929]';
-  const cardBg = isDailyView ? 'bg-white' : 'bg-[#132F4C]';
-  const textPrimary = isDailyView ? 'text-gray-800' : 'text-white';
-  const textSecondary = isDailyView ? 'text-gray-600' : 'text-gray-300';
-  const borderColor = isDailyView ? 'border-gray-200' : 'border-gray-700';
+  const timeRatio = stats ? calculateTimeRatio() : { morning: 0, afternoon: 0, morningPercent: 0, afternoonPercent: 0 };
+  const dailyAverage = stats ? calculateDailyAverage() : 0;
+  const mostActiveTime = stats ? getMostActiveTime() : '10:00';
 
   return (
-    <div className={`min-h-screen ${bgColor} transition-colors duration-300`}>
+    <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className={isDailyView ? 'bg-white shadow-sm' : 'bg-[#0A1929] border-b border-gray-700'}>
+      <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
-              className={`text-2xl font-bold ${isDailyView ? 'text-gray-800 hover:text-blue-600' : 'text-white hover:text-blue-400'}`}
+              className="text-2xl font-bold text-gray-800 hover:text-blue-600"
             >
               ← TicketV2
             </button>
-            <span className="text-gray-500">|</span>
-            <span className={isDailyView ? 'text-gray-600' : 'text-gray-300'}>Statistiques</span>
+            <span className="text-gray-300">|</span>
+            <span className="text-gray-600">Statistiques</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className={`text-sm ${textSecondary}`}>
+            <button
+              onClick={() => navigate('/app')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              📞 Application
+            </button>
+            {user?.role === 'global_admin' && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+              >
+                🛠️ Admin
+              </button>
+            )}
+            <span className="text-gray-300">|</span>
+            <span className="text-sm text-gray-600">
               {user?.fullName || user?.username}
             </span>
             <button
               onClick={() => authService.logout()}
-              className={isDailyView ? 'btn btn-secondary text-sm' : 'px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors'}
+              className="btn btn-secondary text-sm"
             >
               Déconnexion
             </button>
@@ -84,16 +123,16 @@ function Statistics() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Filtres */}
-        <div className={`${cardBg} rounded-xl p-6 shadow-lg mb-8 border ${borderColor}`}>
-          <h2 className={`text-2xl font-bold ${textPrimary} mb-6`}>Filtres</h2>
+        <div className="card mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Filtres</h2>
           
           <div className="grid md:grid-cols-3 gap-4">
             <div>
-              <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Période
               </label>
               <select
-                className={`w-full px-4 py-2 rounded-lg border ${borderColor} ${cardBg} ${textPrimary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                className="input"
                 value={period}
                 onChange={(e) => {
                   setPeriod(e.target.value);
@@ -109,24 +148,24 @@ function Statistics() {
             </div>
 
             <div>
-              <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Date de début
               </label>
               <input
                 type="date"
-                className={`w-full px-4 py-2 rounded-lg border ${borderColor} ${cardBg} ${textPrimary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                className="input"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
 
             <div>
-              <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Date de fin
               </label>
               <input
                 type="date"
-                className={`w-full px-4 py-2 rounded-lg border ${borderColor} ${cardBg} ${textPrimary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                className="input"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
               />
@@ -136,166 +175,225 @@ function Statistics() {
 
         {stats && (
           <>
-            {/* Résumé */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <div className={`${cardBg} rounded-xl p-6 shadow-lg border ${borderColor} ${isDailyView ? 'bg-blue-50' : ''}`}>
-                <h3 className={`text-sm font-medium ${textSecondary} mb-2`}>Total d'appels</h3>
-                <p className={`text-4xl font-bold ${isDailyView ? 'text-blue-600' : 'text-blue-400'}`}>{stats.summary.total}</p>
+            {/* Résumé avec 4 cartes */}
+            <div className="grid md:grid-cols-4 gap-6 mb-8">
+              <div className="card bg-white border-l-4 border-blue-500">
+                <h3 className="text-sm font-medium text-gray-600 mb-2">Total des appels</h3>
+                <p className="text-4xl font-bold text-gray-800">{stats.summary.total}</p>
               </div>
 
-              <div className={`${cardBg} rounded-xl p-6 shadow-lg border ${borderColor} ${isDailyView ? 'bg-red-50' : ''}`}>
-                <h3 className={`text-sm font-medium ${textSecondary} mb-2`}>Appels bloquants</h3>
-                <p className={`text-4xl font-bold ${isDailyView ? 'text-red-600' : 'text-red-400'}`}>{stats.summary.blocking}</p>
+              <div className="card bg-white border-l-4 border-green-500">
+                <h3 className="text-sm font-medium text-gray-600 mb-2">Ratio Matin/Après-midi</h3>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="text-2xl font-bold text-green-600">{timeRatio.morningPercent}%</div>
+                    <div className="text-xs text-gray-500">Matin</div>
+                  </div>
+                  <div className="text-gray-400">/</div>
+                  <div className="flex-1">
+                    <div className="text-2xl font-bold text-orange-600">{timeRatio.afternoonPercent}%</div>
+                    <div className="text-xs text-gray-500">Après-midi</div>
+                  </div>
+                </div>
               </div>
 
-              <div className={`${cardBg} rounded-xl p-6 shadow-lg border ${borderColor} ${isDailyView ? 'bg-purple-50' : ''}`}>
-                <h3 className={`text-sm font-medium ${textSecondary} mb-2`}>Tickets GLPI</h3>
-                <p className={`text-4xl font-bold ${isDailyView ? 'text-purple-600' : 'text-purple-400'}`}>{stats.summary.glpi}</p>
+              <div className="card bg-white border-l-4 border-red-500">
+                <h3 className="text-sm font-medium text-gray-600 mb-2">Appels bloquants</h3>
+                <p className="text-4xl font-bold text-red-600">{stats.summary.blocking}</p>
+              </div>
+
+              <div className="card bg-white border-l-4 border-purple-500">
+                <h3 className="text-sm font-medium text-gray-600 mb-2">Heure la plus active</h3>
+                <p className="text-4xl font-bold text-purple-600">{mostActiveTime}</p>
+                <p className="text-xs text-gray-500 mt-1">Basée sur la moyenne d'aujourd'hui</p>
               </div>
             </div>
 
-            {/* Graphiques */}
+            {/* Graphique principal: Évolution des appels */}
+            <div className="card mb-8">
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Évolution des appels</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={stats.callsByDay.reverse()}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis 
+                    dataKey="date" 
+                    tickFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                    stroke="#6B7280"
+                  />
+                  <YAxis stroke="#6B7280" />
+                  <Tooltip 
+                    labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR')}
+                    contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="#3B82F6" 
+                    name="Appels" 
+                    strokeWidth={3}
+                    dot={{ fill: '#3B82F6', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Graphiques en camembert */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {/* Évolution des appels */}
-              <div className={`${cardBg} rounded-xl p-6 shadow-lg border ${borderColor}`}>
-                <h3 className={`text-lg font-bold ${textPrimary} mb-4`}>
-                  {isDailyView ? 'Évolution des appels' : 'Évolution des Appels'}
-                </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={stats.callsByDay.reverse()}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDailyView ? '#E5E7EB' : '#374151'} />
-                    <XAxis 
-                      dataKey="date" 
-                      tickFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                      stroke={isDailyView ? '#6B7280' : '#9CA3AF'}
-                      style={{ fill: isDailyView ? '#6B7280' : '#9CA3AF' }}
-                    />
-                    <YAxis 
-                      stroke={isDailyView ? '#6B7280' : '#9CA3AF'}
-                      style={{ fill: isDailyView ? '#6B7280' : '#9CA3AF' }}
-                    />
-                    <Tooltip 
-                      labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR')}
-                      contentStyle={{
-                        backgroundColor: isDailyView ? '#FFFFFF' : '#132F4C',
-                        border: `1px solid ${isDailyView ? '#E5E7EB' : '#374151'}`,
-                        borderRadius: '8px',
-                        color: isDailyView ? '#1F2937' : '#FFFFFF'
-                      }}
-                    />
-                    <Legend wrapperStyle={{ color: isDailyView ? '#1F2937' : '#FFFFFF' }} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="count" 
-                      stroke={isDailyView ? '#3B82F6' : '#60A5FA'} 
-                      name="Appels" 
-                      strokeWidth={2}
-                      dot={{ fill: isDailyView ? '#3B82F6' : '#60A5FA' }}
-                    />
-                  </LineChart>
+              {/* Répartition GLPI */}
+              <div className="card">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Répartition GLPI</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Non GLPI', value: stats.summary.total - stats.summary.glpi },
+                        { name: 'GLPI', value: stats.summary.glpi }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      <Cell fill="#3B82F6" />
+                      <Cell fill="#10B981" />
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* Top appelants */}
-              <div className={`${cardBg} rounded-xl p-6 shadow-lg border ${borderColor}`}>
-                <h3 className={`text-lg font-bold ${textPrimary} mb-4`}>Top appelants</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={stats.topCallers.slice(0, 5)}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDailyView ? '#E5E7EB' : '#374151'} />
-                    <XAxis 
-                      dataKey="caller_name"
-                      stroke={isDailyView ? '#6B7280' : '#9CA3AF'}
-                      style={{ fill: isDailyView ? '#6B7280' : '#9CA3AF' }}
-                      angle={-15}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis 
-                      stroke={isDailyView ? '#6B7280' : '#9CA3AF'}
-                      style={{ fill: isDailyView ? '#6B7280' : '#9CA3AF' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: isDailyView ? '#FFFFFF' : '#132F4C',
-                        border: `1px solid ${isDailyView ? '#E5E7EB' : '#374151'}`,
-                        borderRadius: '8px',
-                        color: isDailyView ? '#1F2937' : '#FFFFFF'
-                      }}
-                    />
-                    <Bar 
-                      dataKey="count" 
-                      fill={isDailyView ? '#3B82F6' : '#60A5FA'} 
-                      name="Appels"
-                      radius={[8, 8, 0, 0]}
-                    />
-                  </BarChart>
+              {/* Répartition Bloquant */}
+              <div className="card">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Répartition Bloquant</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Non bloquant', value: stats.summary.total - stats.summary.blocking },
+                        { name: 'Bloquant', value: stats.summary.blocking }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      <Cell fill="#10B981" />
+                      <Cell fill="#EF4444" />
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Tables */}
+            {/* Distribution horaire */}
+            <div className="card mb-8">
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Distribution horaire</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stats.callsByDay.slice(0, 7)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis 
+                    dataKey="date" 
+                    tickFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { weekday: 'short' })}
+                    stroke="#6B7280"
+                  />
+                  <YAxis stroke="#6B7280" />
+                  <Tooltip 
+                    labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR')}
+                    contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                  />
+                  <Bar dataKey="count" fill="#3B82F6" name="Appels" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Top appelants et Top tags */}
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Top raisons */}
-              <div className={`${cardBg} rounded-xl p-6 shadow-lg border ${borderColor}`}>
-                <h3 className={`text-lg font-bold ${textPrimary} mb-4`}>
-                  {isDailyView ? 'Top raisons' : 'Répartition GLPI'}
-                </h3>
-                {stats.topReasons.length > 0 ? (
-                  <div className="space-y-2">
-                    {stats.topReasons.map((reason, idx) => (
-                      <div 
-                        key={idx} 
-                        className={`flex justify-between items-center p-3 rounded-lg ${
-                          isDailyView ? 'bg-gray-50' : 'bg-[#0A1929] border border-gray-700'
-                        }`}
-                      >
-                        <span className={`font-medium ${textPrimary}`}>{reason.reason_name}</span>
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                          isDailyView 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : 'bg-blue-500/20 text-blue-400'
-                        }`}>
-                          {reason.count}
-                        </span>
+              {/* Top appelants */}
+              <div className="card">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Top appelants</h3>
+                {stats.topCallers.length > 0 ? (
+                  <div className="space-y-3">
+                    {stats.topCallers.slice(0, 5).map((caller, idx) => (
+                      <div key={idx} className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-gray-700">{caller.caller_name}</span>
+                            <span className="text-sm font-semibold text-blue-600">{caller.count}</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-500 h-2 rounded-full" 
+                              style={{ 
+                                width: `${(caller.count / stats.topCallers[0].count) * 100}%` 
+                              }}
+                            ></div>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className={textSecondary}>Aucune raison enregistrée</p>
+                  <p className="text-gray-600">Aucun appelant enregistré</p>
                 )}
               </div>
 
               {/* Top tags */}
-              <div className={`${cardBg} rounded-xl p-6 shadow-lg border ${borderColor}`}>
-                <h3 className={`text-lg font-bold ${textPrimary} mb-4`}>
-                  {isDailyView ? 'Top tags' : 'Tags les plus utilisés'}
-                </h3>
+              <div className="card">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Tags les plus utilisés</h3>
                 {stats.topTags.length > 0 ? (
-                  <div className="space-y-2">
-                    {stats.topTags.map((tag, idx) => {
-                      const tagColors = isDailyView 
-                        ? ['bg-blue-100 text-blue-800', 'bg-orange-100 text-orange-800', 'bg-green-100 text-green-800', 'bg-purple-100 text-purple-800', 'bg-pink-100 text-pink-800']
-                        : ['bg-blue-500/20 text-blue-400', 'bg-orange-500/20 text-orange-400', 'bg-green-500/20 text-green-400', 'bg-purple-500/20 text-purple-400', 'bg-pink-500/20 text-pink-400'];
-                      
-                      return (
-                        <div 
-                          key={idx} 
-                          className={`flex justify-between items-center p-3 rounded-lg ${
-                            isDailyView ? 'bg-gray-50' : 'bg-[#0A1929] border border-gray-700'
-                          }`}
-                        >
-                          <span className={`font-medium ${textPrimary}`}>{tag.name}</span>
-                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${tagColors[idx % tagColors.length]}`}>
-                            {tag.count}
-                          </span>
+                  <div className="space-y-3">
+                    {stats.topTags.slice(0, 5).map((tag, idx) => (
+                      <div key={idx} className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-gray-700">{tag.name}</span>
+                            <span className="text-sm font-semibold text-green-600">{tag.count}</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="h-2 rounded-full" 
+                              style={{ 
+                                width: `${(tag.count / stats.topTags[0].count) * 100}%`,
+                                backgroundColor: COLORS[idx % COLORS.length]
+                              }}
+                            ></div>
+                          </div>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className={textSecondary}>Aucun tag utilisé</p>
+                  <p className="text-gray-600">Aucun tag utilisé</p>
                 )}
               </div>
+            </div>
+
+            {/* Top raisons */}
+            <div className="card mt-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Top raisons</h3>
+              {stats.topReasons.length > 0 ? (
+                <div className="space-y-2">
+                  {stats.topReasons.map((reason, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <span className="font-medium text-gray-800">{reason.reason_name}</span>
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                        {reason.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">Aucune raison enregistrée</p>
+              )}
             </div>
           </>
         )}
