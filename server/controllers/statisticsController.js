@@ -123,16 +123,17 @@ exports.getStatistics = async (req, res) => {
     }
 
     // Appels par heure (pour aujourd'hui ou pour un jour spécifique)
+    // Note: created_at est déjà en heure locale, pas besoin de conversion de fuseau horaire
     let callsByHourResult = null;
     if (period === 'day' && !startDate && !endDate) {
-      // Aujourd'hui - afficher de la première heure avec appels jusqu'à l'heure actuelle (heure française)
+      // Aujourd'hui - afficher de la première heure avec appels jusqu'à l'heure actuelle
       callsByHourResult = await pool.query(
         `WITH hour_range AS (
           SELECT 
-            COALESCE(MIN(EXTRACT(HOUR FROM created_at AT TIME ZONE 'Europe/Paris')::integer), EXTRACT(HOUR FROM NOW() AT TIME ZONE 'Europe/Paris')::integer) as min_hour,
-            EXTRACT(HOUR FROM NOW() AT TIME ZONE 'Europe/Paris')::integer as max_hour
+            COALESCE(MIN(EXTRACT(HOUR FROM created_at)::integer), EXTRACT(HOUR FROM NOW())::integer) as min_hour,
+            EXTRACT(HOUR FROM NOW())::integer as max_hour
           FROM calls
-          WHERE tenant_id = $1 AND DATE(created_at AT TIME ZONE 'Europe/Paris') = CURRENT_DATE
+          WHERE tenant_id = $1 AND DATE(created_at) = CURRENT_DATE
         ),
         hours AS (
           SELECT generate_series(
@@ -144,22 +145,22 @@ exports.getStatistics = async (req, res) => {
           h.hour,
           COALESCE(COUNT(c.id), 0) as count
         FROM hours h
-        LEFT JOIN calls c ON EXTRACT(HOUR FROM c.created_at AT TIME ZONE 'Europe/Paris') = h.hour 
+        LEFT JOIN calls c ON EXTRACT(HOUR FROM c.created_at) = h.hour 
           AND c.tenant_id = $1 
-          AND DATE(c.created_at AT TIME ZONE 'Europe/Paris') = CURRENT_DATE
+          AND DATE(c.created_at) = CURRENT_DATE
         GROUP BY h.hour
         ORDER BY h.hour`,
         [tenantId]
       );
     } else if (startDate && endDate && startDate === endDate) {
-      // Un jour spécifique (comme Hier) - afficher de la première à la dernière heure avec appels (heure française)
+      // Un jour spécifique (comme Hier) - afficher de la première à la dernière heure avec appels
       callsByHourResult = await pool.query(
         `WITH hour_range AS (
           SELECT 
-            COALESCE(MIN(EXTRACT(HOUR FROM created_at AT TIME ZONE 'Europe/Paris')::integer), 0) as min_hour,
-            COALESCE(MAX(EXTRACT(HOUR FROM created_at AT TIME ZONE 'Europe/Paris')::integer), 23) as max_hour
+            COALESCE(MIN(EXTRACT(HOUR FROM created_at)::integer), 0) as min_hour,
+            COALESCE(MAX(EXTRACT(HOUR FROM created_at)::integer), 23) as max_hour
           FROM calls
-          WHERE tenant_id = $1 AND DATE(created_at AT TIME ZONE 'Europe/Paris') = $2::date
+          WHERE tenant_id = $1 AND DATE(created_at) = $2::date
         ),
         hours AS (
           SELECT generate_series(
@@ -171,9 +172,9 @@ exports.getStatistics = async (req, res) => {
           h.hour,
           COALESCE(COUNT(c.id), 0) as count
         FROM hours h
-        LEFT JOIN calls c ON EXTRACT(HOUR FROM c.created_at AT TIME ZONE 'Europe/Paris') = h.hour 
+        LEFT JOIN calls c ON EXTRACT(HOUR FROM c.created_at) = h.hour 
           AND c.tenant_id = $1 
-          AND DATE(c.created_at AT TIME ZONE 'Europe/Paris') = $2::date
+          AND DATE(c.created_at) = $2::date
         GROUP BY h.hour
         ORDER BY h.hour`,
         [tenantId, startDate]
