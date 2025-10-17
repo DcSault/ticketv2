@@ -1,0 +1,178 @@
+const pool = require('../config/database');
+
+// Obtenir les statistiques
+exports.getStatistics = async (req, res) => {
+  const { period = 'day', startDate, endDate } = req.query;
+  const tenantId = req.user.role === 'global_admin' ? req.query.tenantId : req.user.tenantId;
+
+  try {
+    let dateFilter = '';
+    const params = [tenantId];
+
+    if (startDate && endDate) {
+      dateFilter = 'AND created_at BETWEEN $2 AND $3';
+      params.push(startDate, endDate);
+    } else {
+      // Calculer la date de début selon la période
+      switch (period) {
+        case 'day':
+          dateFilter = "AND created_at >= CURRENT_DATE";
+          break;
+        case 'week':
+          dateFilter = "AND created_at >= DATE_TRUNC('week', CURRENT_DATE)";
+          break;
+        case 'month':
+          dateFilter = "AND created_at >= DATE_TRUNC('month', CURRENT_DATE)";
+          break;
+        case 'year':
+          dateFilter = "AND created_at >= DATE_TRUNC('year', CURRENT_DATE)";
+          break;
+      }
+    }
+
+    // Total d'appels
+    const totalResult = await pool.query(
+      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter} AND is_archived = false`,
+      params
+    );
+
+    // Appels bloquants
+    const blockingResult = await pool.query(
+      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter} AND is_blocking = true AND is_archived = false`,
+      params
+    );
+
+    // Tickets GLPI
+    const glpiResult = await pool.query(
+      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter} AND is_glpi = true AND is_archived = false`,
+      params
+    );
+
+    // Top appelants
+    const topCallersResult = await pool.query(
+      `SELECT caller_name, COUNT(*) as count
+       FROM calls
+       WHERE tenant_id = $1 ${dateFilter} AND is_archived = false
+       GROUP BY caller_name
+       ORDER BY count DESC
+       LIMIT 10`,
+      params
+    );
+
+    // Top raisons
+    const topReasonsResult = await pool.query(
+      `SELECT reason_name, COUNT(*) as count
+       FROM calls
+       WHERE tenant_id = $1 ${dateFilter} AND is_archived = false AND reason_name IS NOT NULL
+       GROUP BY reason_name
+       ORDER BY count DESC
+       LIMIT 10`,
+      params
+    );
+
+    // Top tags
+    const topTagsResult = await pool.query(
+      `SELECT t.name, COUNT(*) as count
+       FROM call_tags ct
+       JOIN tags t ON ct.tag_id = t.id
+       JOIN calls c ON ct.call_id = c.id
+       WHERE c.tenant_id = $1 ${dateFilter} AND c.is_archived = false
+       GROUP BY t.name
+       ORDER BY count DESC
+       LIMIT 10`,
+      params
+    );
+
+    // Appels par jour (pour les graphiques)
+    const callsByDayResult = await pool.query(
+      `SELECT DATE(created_at) as date, COUNT(*) as count
+       FROM calls
+       WHERE tenant_id = $1 ${dateFilter} AND is_archived = false
+       GROUP BY DATE(created_at)
+       ORDER BY date DESC
+       LIMIT 30`,
+      params
+    );
+
+    res.json({
+      summary: {
+        total: parseInt(totalResult.rows[0].total),
+        blocking: parseInt(blockingResult.rows[0].total),
+        glpi: parseInt(glpiResult.rows[0].total)
+      },
+      topCallers: topCallersResult.rows,
+      topReasons: topReasonsResult.rows,
+      topTags: topTagsResult.rows,
+      callsByDay: callsByDayResult.rows
+    });
+  } catch (error) {
+    console.error('Get statistics error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Exporter les données
+exports.exportData = async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const tenantId = req.user.role === 'global_admin' ? req.query.tenantId : req.user.tenantId;
+
+  try {
+    let query = `
+      SELECT 
+        c.id,
+        c.caller_name as caller,
+        c.reason_name as reason,
+        json_agg(
+          json_build_object('id', t.id, 'name', t.name)
+        ) FILTER (WHERE t.id IS NOT NULL) as tags,
+        c.is_blocking as "isBlocking",
+        c.is_glpi as "isGLPI",
+        c.glpi_number as "glpiNumber",
+        c.is_archived as "isArchived",
+        c.archived_at as "archivedAt",
+        au.username as "archivedBy",
+        c.created_at as "createdAt",
+        cu.username as "createdBy",
+        c.last_modified_at as "lastModifiedAt",
+        mu.username as "lastModifiedBy",
+        c.updated_at as "updatedAt"
+      FROM calls c
+      LEFT JOIN call_tags ct ON c.id = ct.call_id
+      LEFT JOIN tags t ON ct.tag_id = t.id
+      LEFT JOIN users cu ON c.created_by = cu.id
+      LEFT JOIN users mu ON c.last_modified_by = mu.id
+      LEFT JOIN users au ON c.archived_by = au.id
+      WHERE c.tenant_id = $1
+    `;
+
+    const params = [tenantId];
+    let paramCount = 2;
+
+    if (startDate) {
+      query += ` AND c.created_at >= $${paramCount}`;
+      params.push(startDate);
+      paramCount++;
+    }
+
+    if (endDate) {
+      query += ` AND c.created_at <= $${paramCount}`;
+      params.push(endDate);
+      paramCount++;
+    }
+
+    query += ` GROUP BY c.id, cu.username, mu.username, au.username ORDER BY c.created_at DESC`;
+
+    const result = await pool.query(query, params);
+
+    // Nettoyer les données pour l'export
+    const exportData = result.rows.map(row => ({
+      ...row,
+      tags: row.tags || []
+    }));
+
+    res.json(exportData);
+  } catch (error) {
+    console.error('Export data error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};

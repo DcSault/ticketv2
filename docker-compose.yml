@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  app:
+    image: node:18-alpine
+    container_name: ticketv2-app
+    working_dir: /app
+    command: |
+      sh -c '
+        echo "� Installing git..." &&
+        apk add --no-cache git &&
+        echo "📥 Cloning repository..." &&
+        rm -rf /tmp/ticketv2 &&
+        git clone https://github.com/DcSault/ticketv2.git /tmp/ticketv2 &&
+        echo "📦 Copying files..." &&
+        cp -R /tmp/ticketv2/* /app/ &&
+        rm -rf /tmp/ticketv2 &&
+        echo "�📦 Installing dependencies..." &&
+        npm install &&
+        echo "📦 Installing client dependencies..." &&
+        cd client && npm install && cd .. &&
+        echo "🗄️  Waiting for database..." &&
+        sleep 5 &&
+        echo "🔧 Setting up database..." &&
+        node server/scripts/setup-db.js &&
+        echo "🚀 Starting application..." &&
+        npm start
+      '
+    ports:
+      - "7979:3000"
+    depends_on:
+      - db
+    environment:
+      # Database
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=ticketv2
+      - DB_USER=postgres
+      - DB_PASSWORD=.njw6JQ*NKX8.vq!9R2!KfDMDB8Y_n
+      
+      # JWT
+      - JWT_SECRET=Le42tp*r7ng_7YxrV_hm_YaZWmXPmxQ-Af.fgPDZ7Zr*mA@AFzt.jx.aJuojyz@Tux2cCBJDif-@QAHkBoVRbaVKfbVGwUfeXt2g
+      - JWT_EXPIRES_IN=7d
+      
+      # Server
+      - PORT=3000
+      - NODE_ENV=production
+      
+      # Default admin
+      - DEFAULT_ADMIN_USERNAME=admin
+      - DEFAULT_ADMIN_PASSWORD=admin123
+    volumes:
+      - ticketv2_data:/app
+    networks:
+      - ticketv2-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: postgres:15-alpine
+    container_name: ticketv2-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: .njw6JQ*NKX8.vq!9R2!KfDMDB8Y_n
+      POSTGRES_DB: ticketv2
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ticketv2-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    name: ticketv2-db-data
+  ticketv2_data:
+    name: ticketv2-app-data
+
+networks:
+  ticketv2-network:
+    name: ticketv2-network
+    driver: bridge

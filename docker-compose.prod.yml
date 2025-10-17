@@ -1,0 +1,70 @@
+# 🐳 Docker Compose pour Production avec Dockerfile
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ticketv2-app-prod
+    ports:
+      - "7979:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Database
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=ticketv2
+      - DB_USER=postgres
+      - DB_PASSWORD=.njw6JQ*NKX8.vq!9R2!KfDMDB8Y_n
+      
+      # JWT
+      - JWT_SECRET=Le42tp*r7ng_7YxrV_hm_YaZWmXPmxQ-Af.fgPDZ7Zr*mA@AFzt.jx.aJuojyz@Tux2cCBJDif-@QAHkBoVRbaVKfbVGwUfeXt2g
+      - JWT_EXPIRES_IN=7d
+      
+      # Server
+      - PORT=3000
+      - NODE_ENV=production
+      
+      # Default admin
+      - DEFAULT_ADMIN_USERNAME=admin
+      - DEFAULT_ADMIN_PASSWORD=admin123
+    networks:
+      - ticketv2-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: postgres:15-alpine
+    container_name: ticketv2-db-prod
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: .njw6JQ*NKX8.vq!9R2!KfDMDB8Y_n
+      POSTGRES_DB: ticketv2
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ticketv2-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    name: ticketv2-db-data-prod
+
+networks:
+  ticketv2-network:
+    name: ticketv2-network-prod
+    driver: bridge
