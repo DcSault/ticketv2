@@ -126,9 +126,9 @@ function AdminTenant() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/data-management')}
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+              className="text-sm text-gray-600 hover:text-um-olive-700 font-medium"
             >
-              📋 Gestion des données
+              Gestion des données
             </button>
             <span className="text-gray-300">|</span>
             <span className="text-sm text-gray-600">
@@ -147,12 +147,12 @@ function AdminTenant() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="card">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">👥 Gestion des Utilisateurs</h2>
+            <h2 className="text-2xl font-bold text-gray-800">Gestion des Utilisateurs</h2>
             <button
               onClick={openCreateModal}
               className="btn btn-primary"
             >
-              ➕ Nouvel Utilisateur
+              Nouvel Utilisateur
             </button>
           </div>
 

@@ -28,7 +28,7 @@ ChartJS.register(
   Legend
 );
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
+const COLORS = ['#6b7d3d', '#8a9766', '#a3af85', '#576737', '#c0c9ac', '#47532e', '#dce0d1', '#3b4527'];
 
 function Statistics() {
   const navigate = useNavigate();
@@ -158,14 +158,14 @@ function Statistics() {
   const mostActiveTime = stats ? getMostActiveTime() : '10:00';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-um-olive-50 via-white to-gray-50">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm">
+      <nav className="bg-white/80 backdrop-blur-md shadow-lg border-b border-um-olive-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
-              className="text-2xl font-bold text-gray-800 hover:text-blue-600"
+              className="text-2xl font-bold text-gray-800 hover:text-um-olive-700 transition-colors duration-200"
             >
               ← CallFixV2
             </button>
@@ -175,13 +175,13 @@ function Statistics() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/app')}
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+              className="text-sm text-gray-600 hover:text-um-olive-700 font-medium transition-colors duration-200"
             >
               Application
             </button>
             <button
               onClick={() => navigate('/archives')}
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+              className="text-sm text-gray-600 hover:text-um-olive-700 font-medium transition-colors duration-200"
             >
               Archives
             </button>
@@ -189,7 +189,7 @@ function Statistics() {
               <select
                 value={selectedTenant || 'all'}
                 onChange={(e) => handleTenantChange(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-um-olive-600"
               >
                 <option value="all">Tous les tenants</option>
                 {tenants.map(tenant => (
@@ -202,17 +202,17 @@ function Statistics() {
             {user?.role === 'global_admin' && (
               <button
                 onClick={() => navigate('/admin')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                className="text-sm text-gray-600 hover:text-um-olive-700 font-medium"
               >
-                🛠️ Admin
+                Admin
               </button>
             )}
             {user?.role === 'tenant_admin' && (
               <button
                 onClick={() => navigate('/admin-tenant')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                className="text-sm text-gray-600 hover:text-um-olive-700 font-medium"
               >
-                👥 Admin Tenant
+                Admin Tenant
               </button>
             )}
             <span className="text-gray-300">|</span>
@@ -250,17 +250,17 @@ function Statistics() {
         )}
 
         {/* Indicateur d'actualisation automatique - Version améliorée */}
-        <div className="mb-6 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg px-4 py-3">
+        <div className="mb-6 bg-gradient-to-r from-um-olive-50 to-um-olive-100 border border-um-olive-200 rounded-lg px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-sm">
-                <svg className="w-5 h-5 text-blue-600 animate-spin" style={{ animationDuration: '3s' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-um-olive-600 animate-spin" style={{ animationDuration: '3s' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
               </div>
               <div>
                 <p className="font-semibold text-gray-800 flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  <span className="inline-block w-2 h-2 bg-um-olive-600 rounded-full animate-pulse"></span>
                   Actualisation automatique active
                 </p>
                 <p className="text-sm text-gray-600">Les statistiques se mettent à jour toutes les 30 secondes</p>
@@ -279,7 +279,7 @@ function Statistics() {
         </div>
 
         {/* Filtres */}
-        <div className="card mb-8">
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Filtres</h2>
           
           {/* Boutons de raccourcis */}
@@ -291,14 +291,14 @@ function Statistics() {
                 setEndDate('');
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 period === 'day' && !startDate && !endDate
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-um-olive-600 text-white shadow-md hover:shadow-lg transform hover:scale-105'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
               disabled={showAdvanced}
             >
-              📅 Aujourd'hui
+              Aujourd'hui
             </button>
             <button
               onClick={() => {
@@ -310,10 +310,10 @@ function Statistics() {
                 setEndDate(yesterdayStr);
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200`}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200`}
               disabled={showAdvanced}
             >
-              ⏮️ Hier
+              Hier
             </button>
             <button
               onClick={() => {
@@ -322,14 +322,14 @@ function Statistics() {
                 setEndDate('');
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 period === 'week' && !startDate && !endDate
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-um-olive-600 text-white shadow-md hover:shadow-lg transform hover:scale-105'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
               disabled={showAdvanced}
             >
-              📆 Cette semaine
+              Cette semaine
             </button>
             <button
               onClick={() => {
@@ -338,9 +338,9 @@ function Statistics() {
                 setEndDate('');
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 period === 'month' && !startDate && !endDate
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-um-olive-600 text-white shadow-md hover:shadow-lg transform hover:scale-105'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
               disabled={showAdvanced}
@@ -354,9 +354,9 @@ function Statistics() {
                 setEndDate('');
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 period === 'year' && !startDate && !endDate
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-um-olive-600 text-white shadow-md hover:shadow-lg transform hover:scale-105'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
               disabled={showAdvanced}
@@ -370,19 +370,19 @@ function Statistics() {
             {/* Bouton Avancé */}
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 showAdvanced
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-purple-600 text-white shadow-md hover:shadow-lg transform hover:scale-105'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              🔧 {showAdvanced ? 'Masquer' : 'Avancé'}
+              {showAdvanced ? 'Masquer' : 'Avancé'}
             </button>
           </div>
 
           {/* Section avancée (dates personnalisées) */}
           {showAdvanced && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
               <div className="grid md:grid-cols-3 gap-4 items-end">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -390,7 +390,7 @@ function Statistics() {
                   </label>
                   <input
                     type="date"
-                    className="input"
+                    className="input rounded-lg"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                   />
@@ -402,7 +402,7 @@ function Statistics() {
                   </label>
                   <input
                     type="date"
-                    className="input"
+                    className="input rounded-lg"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                   />
@@ -415,7 +415,7 @@ function Statistics() {
                         loadStatistics();
                       }
                     }}
-                    className="btn btn-primary w-full"
+                    className="btn btn-primary w-full rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
                     disabled={!startDate && !endDate}
                   >
                     ✓ Appliquer
@@ -425,7 +425,7 @@ function Statistics() {
               
               {(startDate || endDate) && (
                 <div className="mt-3 text-sm text-gray-600">
-                  ℹ️ Période personnalisée active : 
+                  Période personnalisée active : 
                   {startDate && <span className="font-semibold"> du {new Date(startDate).toLocaleDateString('fr-FR')}</span>}
                   {endDate && <span className="font-semibold"> au {new Date(endDate).toLocaleDateString('fr-FR')}</span>}
                 </div>
@@ -438,12 +438,12 @@ function Statistics() {
           <>
             {/* Résumé avec 4 cartes */}
             <div className="grid md:grid-cols-4 gap-6 mb-8">
-              <div className="card bg-white border-l-4 border-blue-500">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-um-olive-600 transform hover:scale-105 transition-transform duration-200">
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Total des appels</h3>
                 <p className="text-4xl font-bold text-gray-800">{stats.summary.total}</p>
               </div>
 
-              <div className="card bg-white border-l-4 border-green-500">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500 transform hover:scale-105 transition-transform duration-200">
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Ratio Matin/Après-midi</h3>
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
@@ -458,12 +458,12 @@ function Statistics() {
                 </div>
               </div>
 
-              <div className="card bg-white border-l-4 border-red-500">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-red-500 transform hover:scale-105 transition-transform duration-200">
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Appels bloquants</h3>
                 <p className="text-4xl font-bold text-red-600">{stats.summary.blocking}</p>
               </div>
 
-              <div className="card bg-white border-l-4 border-purple-500">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500 transform hover:scale-105 transition-transform duration-200">
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Heure la plus active</h3>
                 <p className="text-4xl font-bold text-purple-600">{mostActiveTime}</p>
                 <p className="text-xs text-gray-500 mt-1">Basée sur la moyenne d'aujourd'hui</p>
@@ -472,7 +472,7 @@ function Statistics() {
 
             {/* Graphique horaire (pour aujourd'hui et hier) - Courbe */}
             {stats.callsByHour && stats.callsByHour.length > 0 && (
-              <div className="card mb-8">
+              <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Évolution heure par heure</h3>
                 <div style={{ height: '300px' }}>
                   <Line
@@ -522,7 +522,7 @@ function Statistics() {
             {/* Graphique principal: Évolution des appels (par jour OU par mois) */}
             {/* Ne pas afficher pour "aujourd'hui" ou "hier" (déjà affiché en heure par heure) */}
             {stats.callsByDay && stats.callsByDay.length > 0 && !stats.callsByHour && (
-              <div className="card mb-8">
+              <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">
                   {period === 'year' && !startDate ? 'Évolution mensuelle' : 'Évolution des appels'}
                 </h3>
@@ -612,7 +612,7 @@ function Statistics() {
             {/* Graphiques en camembert */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               {/* Répartition GLPI */}
-              <div className="card">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Répartition GLPI</h3>
                 <div style={{ height: '250px' }}>
                   <Doughnut
@@ -641,7 +641,7 @@ function Statistics() {
               </div>
 
               {/* Répartition Bloquant */}
-              <div className="card">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Répartition Bloquant</h3>
                 <div style={{ height: '250px' }}>
                   <Doughnut
@@ -673,7 +673,7 @@ function Statistics() {
             {/* Top appelants et Top tags */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Top appelants */}
-              <div className="card">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Top appelants</h3>
                 {stats.topCallers.length > 0 ? (
                   <div className="space-y-3">
@@ -682,11 +682,11 @@ function Statistics() {
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-sm font-medium text-gray-700">{caller.caller_name}</span>
-                            <span className="text-sm font-semibold text-blue-600">{caller.count}</span>
+                            <span className="text-sm font-semibold text-um-olive-700">{caller.count}</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className="bg-blue-500 h-2 rounded-full" 
+                              className="bg-um-olive-600 h-2 rounded-full transition-all duration-500" 
                               style={{ 
                                 width: `${(caller.count / stats.topCallers[0].count) * 100}%` 
                               }}
@@ -702,7 +702,7 @@ function Statistics() {
               </div>
 
               {/* Top tags */}
-              <div className="card">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Tags les plus utilisés</h3>
                 {stats.topTags.length > 0 ? (
                   <div className="space-y-3">
@@ -733,14 +733,14 @@ function Statistics() {
             </div>
 
             {/* Top raisons */}
-            <div className="card mt-6">
+            <div className="bg-white rounded-2xl shadow-lg p-6 mt-6 border border-gray-100">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Top raisons</h3>
               {stats.topReasons.length > 0 ? (
                 <div className="space-y-2">
                   {stats.topReasons.map((reason, idx) => (
-                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl hover:bg-um-olive-50 transition-colors duration-200">
                       <span className="font-medium text-gray-800">{reason.reason_name}</span>
-                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                      <span className="px-3 py-1 bg-um-olive-100 text-um-olive-800 rounded-full text-sm font-semibold">
                         {reason.count}
                       </span>
                     </div>
