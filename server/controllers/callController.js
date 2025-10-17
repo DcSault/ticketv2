@@ -33,7 +33,14 @@ exports.getCalls = async (req, res) => {
       paramCount++;
     }
 
-    // Filtre de dates personnalisées (prioritaire)
+    // Filtre selon le statut d'archivage
+    if (archived === 'true') {
+      query += ' AND c.is_archived = true';
+    } else {
+      query += ' AND c.is_archived = false';
+    }
+
+    // Filtre de dates personnalisées
     if (startDate && endDate) {
       // Utiliser >= et < pour inclure toute la journée de fin
       query += ` AND c.created_at >= $${paramCount}::date AND c.created_at < ($${paramCount + 1}::date + INTERVAL '1 day')`;
@@ -47,15 +54,6 @@ exports.getCalls = async (req, res) => {
       query += ` AND c.created_at < ($${paramCount}::date + INTERVAL '1 day')`;
       params.push(endDate);
       paramCount++;
-    } else {
-      // Filtre par défaut selon le paramètre archived (seulement si pas de dates personnalisées)
-      if (archived === 'true') {
-        // Archives : tous les appels AVANT aujourd'hui
-        query += ' AND DATE(c.created_at) < CURRENT_DATE';
-      } else {
-        // Application : uniquement les appels d'AUJOURD'HUI
-        query += ' AND DATE(c.created_at) = CURRENT_DATE';
-      }
     }
 
     query += ` GROUP BY c.id, cu.username, cu.full_name, mu.username, mu.full_name`;
@@ -393,6 +391,65 @@ exports.deleteCall = async (req, res) => {
     res.json({ message: 'Call deleted successfully' });
   } catch (error) {
     console.error('Delete call error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Archiver un appel
+exports.archiveCall = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  const isGlobalAdmin = req.user.role === 'global_admin';
+
+  try {
+    let query = 'UPDATE calls SET is_archived = true, archived_at = CURRENT_TIMESTAMP, archived_by = $1 WHERE id = $2';
+    const params = [userId, id];
+
+    if (!isGlobalAdmin) {
+      query += ' AND tenant_id = $3';
+      params.push(req.user.tenantId);
+    }
+
+    query += ' RETURNING *';
+
+    const result = await pool.query(query, params);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Call not found' });
+    }
+
+    res.json({ message: 'Call archived successfully', call: result.rows[0] });
+  } catch (error) {
+    console.error('Archive call error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Désarchiver un appel
+exports.unarchiveCall = async (req, res) => {
+  const { id } = req.params;
+  const isGlobalAdmin = req.user.role === 'global_admin';
+
+  try {
+    let query = 'UPDATE calls SET is_archived = false, archived_at = NULL, archived_by = NULL WHERE id = $1';
+    const params = [id];
+
+    if (!isGlobalAdmin) {
+      query += ' AND tenant_id = $2';
+      params.push(req.user.tenantId);
+    }
+
+    query += ' RETURNING *';
+
+    const result = await pool.query(query, params);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Call not found' });
+    }
+
+    res.json({ message: 'Call unarchived successfully', call: result.rows[0] });
+  } catch (error) {
+    console.error('Unarchive call error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };

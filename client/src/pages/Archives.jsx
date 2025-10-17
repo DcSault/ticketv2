@@ -140,6 +140,19 @@ function Archives() {
     });
   };
 
+  const handleUnarchive = async (id) => {
+    if (!confirm('Désarchiver cet appel ? Il reviendra dans la liste principale.')) return;
+    
+    try {
+      await callService.unarchiveCall(id);
+      setCalls(calls.filter(call => call.id !== id));
+      alert('✅ Appel désarchivé avec succès');
+    } catch (error) {
+      console.error('Error unarchiving call:', error);
+      alert('Erreur lors du désarchivage');
+    }
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR', {
@@ -428,6 +441,14 @@ function Archives() {
                             ))}
                         </div>
                       )}
+                    </div>
+                    <div className="ml-4">
+                      <button
+                        onClick={() => handleUnarchive(call.id)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        ↩️ Désarchiver
+                      </button>
                     </div>
                   </div>
                 </div>

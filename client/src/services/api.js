@@ -65,6 +65,8 @@ export const callService = {
   createCall: (data) => api.post('/calls', data),
   updateCall: (id, data) => api.put(`/calls/${id}`, data),
   deleteCall: (id) => api.delete(`/calls/${id}`),
+  archiveCall: (id) => api.post(`/calls/${id}/archive`),
+  unarchiveCall: (id) => api.post(`/calls/${id}/unarchive`),
   getSuggestions: (type) => api.get(`/calls/suggestions/${type}`)
 };
 

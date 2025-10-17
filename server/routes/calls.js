@@ -11,6 +11,8 @@ router.get('/', callController.getCalls);
 router.post('/', callController.createCall);
 router.put('/:id', callController.updateCall);
 router.delete('/:id', callController.deleteCall);
+router.post('/:id/archive', callController.archiveCall);
+router.post('/:id/unarchive', callController.unarchiveCall);
 router.get('/suggestions/:type', callController.getSuggestions);
 
 module.exports = router;

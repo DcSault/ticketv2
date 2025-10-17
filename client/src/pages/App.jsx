@@ -150,6 +150,19 @@ function App() {
     }
   };
 
+  const handleArchive = async (id) => {
+    if (!confirm('Archiver cet appel ? Il sera déplacé dans les archives.')) return;
+    
+    try {
+      await callService.archiveCall(id);
+      setCalls(calls.filter(call => call.id !== id));
+      alert('✅ Appel archivé avec succès');
+    } catch (error) {
+      console.error('Error archiving call:', error);
+      alert('Erreur lors de l\'archivage');
+    }
+  };
+
   const addTag = (tag) => {
     if (tag && !formData.tags.includes(tag)) {
       setFormData({ ...formData, tags: [...formData.tags, tag] });
@@ -489,6 +502,7 @@ function App() {
                   onCancel={() => setEditingCall(null)}
                   onSave={(updates) => handleUpdate(call.id, updates)}
                   onDelete={() => handleDelete(call.id)}
+                  onArchive={() => handleArchive(call.id)}
                   formatDate={formatDate}
                   getDayName={getDayName}
                 />
@@ -502,7 +516,7 @@ function App() {
 }
 
 // Composant pour un appel
-function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, formatDate, getDayName }) {
+function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchive, formatDate, getDayName }) {
   // Parser les tags correctement dès l'initialisation
   const initialTags = (call.tags && Array.isArray(call.tags)) 
     ? call.tags.filter(t => t && t.name).map(t => t.name) 
@@ -849,6 +863,12 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, formatD
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
             Modifier
+          </button>
+          <button
+            onClick={onArchive}
+            className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+          >
+            📦 Archiver
           </button>
           <button
             onClick={onDelete}
