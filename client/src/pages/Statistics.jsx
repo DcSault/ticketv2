@@ -1,7 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService, statisticsService } from '../services/api';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar, Line, Doughnut } from 'react-chartjs-2';
+
+// Enregistrer les composants Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
 
@@ -227,30 +252,42 @@ function Statistics() {
             {stats.callsByHour && stats.callsByHour.length > 0 && (
               <div className="card mb-8">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Appels par heure (Aujourd'hui)</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={stats.callsByHour}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis 
-                      dataKey="hour" 
-                      tickFormatter={(hour) => `${hour}h`}
-                      stroke="#6B7280"
-                    />
-                    <YAxis 
-                      stroke="#6B7280" 
-                      allowDecimals={false}
-                    />
-                    <Tooltip 
-                      labelFormatter={(hour) => `${hour}h00 - ${hour}h59`}
-                      contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                    />
-                    <Bar 
-                      dataKey="count" 
-                      fill="#3B82F6" 
-                      name="Appels" 
-                      radius={[8, 8, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div style={{ height: '300px' }}>
+                  <Bar
+                    data={{
+                      labels: stats.callsByHour.map(item => `${item.hour}h`),
+                      datasets: [{
+                        label: 'Appels',
+                        data: stats.callsByHour.map(item => item.count),
+                        backgroundColor: '#3B82F6',
+                        borderRadius: 8,
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            stepSize: 1,
+                            precision: 0
+                          }
+                        }
+                      },
+                      plugins: {
+                        legend: {
+                          display: false
+                        },
+                        tooltip: {
+                          callbacks: {
+                            title: (context) => `${stats.callsByHour[context[0].dataIndex].hour}h00 - ${stats.callsByHour[context[0].dataIndex].hour}h59`
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
             )}
 
@@ -260,48 +297,69 @@ function Statistics() {
                 <h3 className="text-lg font-bold text-gray-800 mb-4">
                   {stats.callsByHour ? 'Évolution sur la période' : 'Évolution des appels'}
                 </h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <LineChart 
-                    data={[...stats.callsByDay].sort((a, b) => new Date(a.date) - new Date(b.date))}
-                    margin={{ top: 5, right: 30, left: 0, bottom: 70 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis 
-                      dataKey="date" 
-                      tickFormatter={(date) => {
-                        const d = new Date(date);
-                        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-                      }}
-                      stroke="#6B7280"
-                      angle={-45}
-                      textAnchor="end"
-                      height={70}
-                    />
-                    <YAxis 
-                      stroke="#6B7280" 
-                      allowDecimals={false}
-                    />
-                    <Tooltip 
-                      labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { 
-                        weekday: 'long',
-                        day: '2-digit', 
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                      contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                    />
-                    <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="count" 
-                      stroke="#3B82F6" 
-                      name="Appels" 
-                      strokeWidth={3}
-                      dot={{ fill: '#3B82F6', r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div style={{ height: '400px' }}>
+                  <Line
+                    data={{
+                      labels: [...stats.callsByDay]
+                        .sort((a, b) => new Date(a.date) - new Date(b.date))
+                        .map(item => {
+                          const d = new Date(item.date);
+                          return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+                        }),
+                      datasets: [{
+                        label: 'Appels',
+                        data: [...stats.callsByDay]
+                          .sort((a, b) => new Date(a.date) - new Date(b.date))
+                          .map(item => item.count),
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#3B82F6',
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            stepSize: 1,
+                            precision: 0
+                          }
+                        },
+                        x: {
+                          ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                          }
+                        }
+                      },
+                      plugins: {
+                        legend: {
+                          display: false
+                        },
+                        tooltip: {
+                          callbacks: {
+                            title: (context) => {
+                              const sortedData = [...stats.callsByDay].sort((a, b) => new Date(a.date) - new Date(b.date));
+                              const date = new Date(sortedData[context[0].dataIndex].date);
+                              return date.toLocaleDateString('fr-FR', { 
+                                weekday: 'long',
+                                day: '2-digit', 
+                                month: 'long',
+                                year: 'numeric'
+                              });
+                            }
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
             )}
 
@@ -310,97 +368,131 @@ function Statistics() {
               {/* Répartition GLPI */}
               <div className="card">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Répartition GLPI</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Non GLPI', value: stats.summary.total - stats.summary.glpi },
-                        { name: 'GLPI', value: stats.summary.glpi }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      <Cell fill="#3B82F6" />
-                      <Cell fill="#10B981" />
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div style={{ height: '250px' }}>
+                  <Doughnut
+                    data={{
+                      labels: ['Non GLPI', 'GLPI'],
+                      datasets: [{
+                        data: [
+                          stats.summary.total - stats.summary.glpi,
+                          stats.summary.glpi
+                        ],
+                        backgroundColor: ['#3B82F6', '#10B981'],
+                        borderWidth: 0,
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'bottom'
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Répartition Bloquant */}
               <div className="card">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Répartition Bloquant</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Non bloquant', value: stats.summary.total - stats.summary.blocking },
-                        { name: 'Bloquant', value: stats.summary.blocking }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      <Cell fill="#10B981" />
-                      <Cell fill="#EF4444" />
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div style={{ height: '250px' }}>
+                  <Doughnut
+                    data={{
+                      labels: ['Non bloquant', 'Bloquant'],
+                      datasets: [{
+                        data: [
+                          stats.summary.total - stats.summary.blocking,
+                          stats.summary.blocking
+                        ],
+                        backgroundColor: ['#10B981', '#EF4444'],
+                        borderWidth: 0,
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'bottom'
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
             {/* Distribution des 7 derniers jours */}
             <div className="card mb-8">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Appels des 7 derniers jours</h3>
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart 
-                  data={[...stats.callsByDay]
-                    .sort((a, b) => new Date(b.date) - new Date(a.date))
-                    .slice(0, 7)
-                    .reverse()
-                  }
-                  margin={{ top: 5, right: 30, left: 0, bottom: 50 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={(date) => {
-                      const d = new Date(date);
-                      const day = d.toLocaleDateString('fr-FR', { weekday: 'short' });
-                      const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-                      return `${day} ${dateStr}`;
-                    }}
-                    stroke="#6B7280"
-                    angle={-15}
-                    textAnchor="end"
-                    height={70}
-                  />
-                  <YAxis 
-                    stroke="#6B7280" 
-                    allowDecimals={false}
-                  />
-                  <Tooltip 
-                    labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', {
-                      weekday: 'long',
-                      day: '2-digit', 
-                      month: 'long'
-                    })}
-                    contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  />
-                  <Bar dataKey="count" fill="#3B82F6" name="Appels" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div style={{ height: '350px' }}>
+                <Bar
+                  data={{
+                    labels: [...stats.callsByDay]
+                      .sort((a, b) => new Date(b.date) - new Date(a.date))
+                      .slice(0, 7)
+                      .reverse()
+                      .map(item => {
+                        const d = new Date(item.date);
+                        const day = d.toLocaleDateString('fr-FR', { weekday: 'short' });
+                        const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+                        return `${day} ${dateStr}`;
+                      }),
+                    datasets: [{
+                      label: 'Appels',
+                      data: [...stats.callsByDay]
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))
+                        .slice(0, 7)
+                        .reverse()
+                        .map(item => item.count),
+                      backgroundColor: '#3B82F6',
+                      borderRadius: 8,
+                    }]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          stepSize: 1,
+                          precision: 0
+                        }
+                      },
+                      x: {
+                        ticks: {
+                          maxRotation: 15,
+                          minRotation: 15
+                        }
+                      }
+                    },
+                    plugins: {
+                      legend: {
+                        display: false
+                      },
+                      tooltip: {
+                        callbacks: {
+                          title: (context) => {
+                            const last7Days = [...stats.callsByDay]
+                              .sort((a, b) => new Date(b.date) - new Date(a.date))
+                              .slice(0, 7)
+                              .reverse();
+                            const date = new Date(last7Days[context[0].dataIndex].date);
+                            return date.toLocaleDateString('fr-FR', {
+                              weekday: 'long',
+                              day: '2-digit', 
+                              month: 'long'
+                            });
+                          }
+                        }
+                      }
+                    }
+                  }}
+                />
+              </div>
             </div>
 
             {/* Top appelants et Top tags */}
