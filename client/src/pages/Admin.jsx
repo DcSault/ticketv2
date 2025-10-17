@@ -815,20 +815,15 @@ function UserModal({ user, tenants, onClose, onSave }) {
             >
               <option value="user">Utilisateur</option>
               <option value="tenant_admin">Admin Tenant</option>
-              <option value="viewer">Viewer (Lecture seule - Multi-tenant)</option>
+              <option value="viewer">Viewer (Lecture seule)</option>
               <option value="global_admin">Admin Global</option>
             </select>
-            {formData.role === 'viewer' && (
-              <p className="text-xs text-gray-500 mt-1">
-                Le rôle Viewer a accès à tous les tenants en lecture seule
-              </p>
-            )}
           </div>
 
-          {formData.role !== 'global_admin' && formData.role !== 'viewer' && (
+          {formData.role !== 'global_admin' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tenant *
+                Tenant {formData.role === 'viewer' ? '(optionnel)' : '*'}
               </label>
               <select
                 className="input"
@@ -836,13 +831,20 @@ function UserModal({ user, tenants, onClose, onSave }) {
                 onChange={(e) => setFormData({ ...formData, tenantId: e.target.value })}
                 required={formData.role !== 'global_admin' && formData.role !== 'viewer'}
               >
-                <option value="">Sélectionner un tenant</option>
+                <option value="">
+                  {formData.role === 'viewer' ? 'Tous les tenants (Multi-tenant)' : 'Sélectionner un tenant'}
+                </option>
                 {tenants.map((tenant) => (
                   <option key={tenant.id} value={tenant.id}>
                     {tenant.display_name}
                   </option>
                 ))}
               </select>
+              {formData.role === 'viewer' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  ℹ️ Laissez vide pour un accès à tous les tenants, ou choisissez un tenant spécifique
+                </p>
+              )}
             </div>
           )}
 

@@ -41,16 +41,17 @@ function Statistics() {
   const [endDate, setEndDate] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   
-  // Tenant selection for global_admin
+  // Tenant selection for global_admin and multi-tenant viewer
+  const isMultiTenant = user?.role === 'global_admin' || (user?.role === 'viewer' && !user?.tenantId);
   const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState(
-    (user?.role === 'global_admin' || user?.role === 'viewer')
+    isMultiTenant
       ? localStorage.getItem('selectedTenantId') || 'all'
       : null
   );
 
   useEffect(() => {
-    if (user?.role === 'global_admin' || user?.role === 'viewer') {
+    if (isMultiTenant) {
       loadTenants();
     }
   }, []);
@@ -83,7 +84,7 @@ function Statistics() {
       const params = { period };
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
-      if ((user?.role === 'global_admin' || user?.role === 'viewer') && selectedTenant && selectedTenant !== 'all') {
+      if (isMultiTenant && selectedTenant && selectedTenant !== 'all') {
         params.tenantId = selectedTenant;
       }
 
@@ -166,29 +167,27 @@ function Statistics() {
             >
               📦 Archives
             </button>
-            {(user?.role === 'global_admin' || user?.role === 'viewer') && (
-              <>
-                <select
-                  value={selectedTenant || 'all'}
-                  onChange={(e) => handleTenantChange(e.target.value)}
-                  className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">🌍 Tous les tenants</option>
-                  {tenants.map(tenant => (
-                    <option key={tenant.id} value={tenant.id}>
-                      {tenant.name}
-                    </option>
-                  ))}
-                </select>
-                {user?.role === 'global_admin' && (
-                  <button
-                    onClick={() => navigate('/admin')}
-                    className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-                  >
-                    🛠️ Admin
-                  </button>
-                )}
-              </>
+            {isMultiTenant && (
+              <select
+                value={selectedTenant || 'all'}
+                onChange={(e) => handleTenantChange(e.target.value)}
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">🌍 Tous les tenants</option>
+                {tenants.map(tenant => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            {user?.role === 'global_admin' && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+              >
+                🛠️ Admin
+              </button>
             )}
             {user?.role === 'tenant_admin' && (
               <button

@@ -3,7 +3,10 @@ const pool = require('../config/database');
 // Obtenir tous les appels du tenant
 exports.getCalls = async (req, res) => {
   const { startDate, endDate, limit = 100, offset = 0, archived } = req.query;
-  const tenantId = (req.user.role === 'global_admin' || req.user.role === 'viewer') ? req.query.tenantId : req.user.tenantId;
+  // Viewer multi-tenant peut choisir, viewer avec tenant_id ne peut voir que son tenant
+  const tenantId = (req.user.role === 'global_admin' || (req.user.role === 'viewer' && !req.user.tenantId)) 
+    ? req.query.tenantId 
+    : req.user.tenantId;
 
   try {
     let query = `

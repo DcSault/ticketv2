@@ -139,22 +139,24 @@ async function setupDatabase() {
 
     console.log('✅ Default users created');
 
-    // Migration: S'assurer que tous les viewers et global_admin ont tenant_id = NULL
+    // Migration: S'assurer que tous les global_admin ont tenant_id = NULL
     const migrationResult = await client.query(`
       UPDATE users 
       SET tenant_id = NULL 
-      WHERE (role = 'viewer' OR role = 'global_admin') AND tenant_id IS NOT NULL
+      WHERE role = 'global_admin' AND tenant_id IS NOT NULL
       RETURNING id, username, role;
     `);
 
     if (migrationResult.rows.length > 0) {
-      console.log('✅ Migration: Updated tenant_id for multi-tenant users:', migrationResult.rows);
+      console.log('✅ Migration: Updated tenant_id for global_admin users:', migrationResult.rows);
     }
 
     // Mettre à jour le commentaire de la colonne role pour inclure viewer
     await client.query(`
       COMMENT ON COLUMN users.role IS 'user, tenant_admin, global_admin, viewer';
     `);
+
+    console.log('ℹ️  Note: Viewers can be multi-tenant (tenant_id = NULL) or restricted to a specific tenant');
 
     console.log('\n📝 Credentials:');
     console.log(`   Global Admin: ${process.env.DEFAULT_ADMIN_USERNAME || 'admin'} / ${process.env.DEFAULT_ADMIN_PASSWORD || 'admin123'}`);
