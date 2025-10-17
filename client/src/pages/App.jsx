@@ -450,12 +450,14 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, formatD
       let parsedTags = [];
       if (call.tags && Array.isArray(call.tags)) {
         parsedTags = call.tags
-          .filter(t => t && t.name) // Filtrer les null/undefined et ceux sans nom
-          .map(t => t.name);
+          .filter(t => t && (typeof t === 'string' ? t : t.name)) // Support string ou objet
+          .map(t => typeof t === 'string' ? t : t.name);
       }
       
-      console.log('🏷️ Tags reçus:', call.tags);
-      console.log('🏷️ Tags parsés:', parsedTags);
+      console.log('🔍 Call complet:', call);
+      console.log('🏷️ call.tags brut:', call.tags);
+      console.log('🏷️ Type de call.tags:', typeof call.tags, Array.isArray(call.tags));
+      console.log('🏷️ Tags parsés pour editData:', parsedTags);
       
       setEditData({
         caller: call.caller_name,
@@ -589,23 +591,29 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, formatD
           {/* Tags avec autocomplétion */}
           {!editData.isGlpi && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tags {editData.tags.length > 0 && `(${editData.tags.length})`}
+              </label>
               <div className="flex flex-wrap gap-2 mb-2">
-                {editData.tags.map((tag, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="hover:text-blue-600"
+                {editData.tags && editData.tags.length > 0 ? (
+                  editData.tags.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
                     >
-                      ×
-                    </button>
-                  </span>
-                ))}
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="hover:text-blue-600"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-gray-400">Aucun tag</span>
+                )}
               </div>
               <div className="relative">
                 <input
@@ -737,16 +745,18 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, formatD
           {call.reason_name && (
             <p className="text-gray-600 mb-2">{call.reason_name}</p>
           )}
-          {call.tags && call.tags.length > 0 && call.tags[0] && (
+          {call.tags && Array.isArray(call.tags) && call.tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {call.tags.filter(t => t).map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                >
-                  {tag.name}
-                </span>
-              ))}
+              {call.tags
+                .filter(t => t && (typeof t === 'string' ? t : t.name))
+                .map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                  >
+                    {typeof tag === 'string' ? tag : tag.name}
+                  </span>
+                ))}
             </div>
           )}
         </div>
