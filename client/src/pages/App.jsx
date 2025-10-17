@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService, callService, adminService } from '../services/api';
+import ThemeToggle from '../components/ThemeToggle';
 
 function App() {
   const navigate = useNavigate();
@@ -485,13 +486,15 @@ function App() {
                 </button>
               )}
               
-              <span className="text-slate-700">|</span>
+              <span className="text-slate-300 dark:text-slate-700">|</span>
               
-              <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg">
+              <ThemeToggle />
+              
+              <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800/50 rounded-lg">
                 <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                   {(user?.fullName || user?.username).charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm text-slate-200">{user?.fullName || user?.username}</span>
+                <span className="text-sm text-slate-800 dark:text-slate-200">{user?.fullName || user?.username}</span>
               </div>
               
               <button
@@ -516,7 +519,7 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </div>
-              <h2 className="card-title">Nouvel Appel</h2>
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Nouvel Appel</h2>
             </div>
             <button
               type="button"
@@ -537,7 +540,7 @@ function App() {
             <div className="grid md:grid-cols-2 gap-6">
               {/* Appelant */}
               <div className="relative">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Appelant *
                 </label>
                 <input
