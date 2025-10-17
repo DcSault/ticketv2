@@ -270,15 +270,15 @@ function ImportTab({ tenants, loadTenants }) {
     setResult(null);
 
     try {
-      // Lire le fichier JSON
+      // Valider que c'est un JSON valide
       const fileContent = await file.text();
-      const calls = JSON.parse(fileContent);
-
-      if (!Array.isArray(calls)) {
-        throw new Error('Le fichier JSON doit contenir un tableau d\'appels');
+      try {
+        JSON.parse(fileContent);
+      } catch (e) {
+        throw new Error('Fichier JSON invalide');
       }
 
-      // Importer les appels via l'API
+      // Importer les appels via l'API (le backend détectera le format)
       const formData = new FormData();
       formData.append('file', file);
       formData.append('tenantId', selectedTenant);
@@ -312,11 +312,12 @@ function ImportTab({ tenants, loadTenants }) {
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Importer des Appels (JSON)</h2>
       
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <h3 className="font-semibold text-blue-900 mb-2">ℹ️ Format attendu :</h3>
-        <p className="text-sm text-blue-800 mb-2">
-          Le fichier JSON doit contenir un tableau d'objets avec les champs suivants :
-        </p>
-        <pre className="bg-white p-3 rounded text-xs overflow-x-auto">
+        <h3 className="font-semibold text-blue-900 mb-2">ℹ️ Formats supportés :</h3>
+        
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm font-medium text-blue-800 mb-1">✅ Format nouveau (TicketV2) :</p>
+            <pre className="bg-white p-3 rounded text-xs overflow-x-auto">
 {`[
   {
     "caller": "Nom de l'appelant",
@@ -328,7 +329,37 @@ function ImportTab({ tenants, loadTenants }) {
     "createdAt": "2024-01-01T10:00:00.000Z"
   }
 ]`}
-        </pre>
+            </pre>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-blue-800 mb-1">✅ Format ancien (v2.0.7) :</p>
+            <pre className="bg-white p-3 rounded text-xs overflow-x-auto">
+{`{
+  "metadata": { "version": "2.0.7", ... },
+  "data": {
+    "tickets": [
+      {
+        "caller": "...",
+        "reason": "...",
+        "tags": ["tag1", "tag2"],
+        "isBlocking": false,
+        "isGLPI": false,
+        "createdAt": "..."
+      }
+    ]
+  }
+}`}
+            </pre>
+          </div>
+
+          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+            <p className="text-xs text-green-800">
+              💡 <strong>Conversion automatique :</strong> Les exports de l'ancienne version sont automatiquement 
+              convertis lors de l'import. Les tickets archivés sont ignorés.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-6">

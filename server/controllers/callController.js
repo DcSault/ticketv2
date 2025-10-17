@@ -199,24 +199,33 @@ exports.updateCall = async (req, res) => {
     createdAt
   } = req.body;
 
-  const tenantId = req.user.tenantId;
   const userId = req.user.id;
+  const isGlobalAdmin = req.user.role === 'global_admin';
 
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    // Vérifier que l'appel appartient au tenant
-    const checkCall = await client.query(
-      'SELECT id FROM calls WHERE id = $1 AND tenant_id = $2',
-      [id, tenantId]
-    );
+    // Récupérer l'appel et son tenant_id
+    let checkQuery = 'SELECT id, tenant_id FROM calls WHERE id = $1';
+    const checkParams = [id];
+    
+    // Si ce n'est pas un admin global, vérifier le tenant
+    if (!isGlobalAdmin) {
+      checkQuery += ' AND tenant_id = $2';
+      checkParams.push(req.user.tenantId);
+    }
+
+    const checkCall = await client.query(checkQuery, checkParams);
 
     if (checkCall.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Call not found' });
     }
+
+    // Utiliser le tenant_id de l'appel pour les opérations suivantes
+    const tenantId = checkCall.rows[0].tenant_id;
 
     // Mettre à jour l'appelant si nécessaire
     let callerId = null;
@@ -348,13 +357,21 @@ exports.updateCall = async (req, res) => {
 // Supprimer un appel
 exports.deleteCall = async (req, res) => {
   const { id } = req.params;
-  const tenantId = req.user.tenantId;
+  const isGlobalAdmin = req.user.role === 'global_admin';
 
   try {
-    const result = await pool.query(
-      'DELETE FROM calls WHERE id = $1 AND tenant_id = $2 RETURNING id',
-      [id, tenantId]
-    );
+    let query = 'DELETE FROM calls WHERE id = $1';
+    const params = [id];
+
+    // Si ce n'est pas un admin global, vérifier le tenant
+    if (!isGlobalAdmin) {
+      query += ' AND tenant_id = $2';
+      params.push(req.user.tenantId);
+    }
+
+    query += ' RETURNING id';
+
+    const result = await pool.query(query, params);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Call not found' });

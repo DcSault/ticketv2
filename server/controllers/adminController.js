@@ -314,10 +314,38 @@ exports.importCalls = async (req, res) => {
 
     // Lire et parser le fichier JSON
     const fileContent = req.file.buffer.toString('utf-8');
-    const calls = JSON.parse(fileContent);
+    let jsonData = JSON.parse(fileContent);
 
-    if (!Array.isArray(calls)) {
-      return res.status(400).json({ error: 'JSON must contain an array of calls' });
+    // Détecter et convertir l'ancien format (v2.0.7)
+    let calls = [];
+    if (jsonData.metadata && jsonData.data && jsonData.data.tickets) {
+      // Format ancien: {metadata: {...}, data: {tickets: [...], users: [...], ...}}
+      console.log(`📦 Ancien format détecté (v${jsonData.metadata.version || 'inconnue'})`);
+      console.log(`📊 ${jsonData.data.tickets.length} tickets à convertir`);
+      
+      // Convertir les tickets en calls
+      calls = jsonData.data.tickets
+        .filter(ticket => !ticket.isArchived) // Ignorer les tickets archivés
+        .map(ticket => ({
+          caller: ticket.caller,
+          reason: ticket.reason || '',
+          tags: (ticket.tags || []).map(tag => 
+            typeof tag === 'string' ? { name: tag } : tag
+          ),
+          isBlocking: ticket.isBlocking || false,
+          isGLPI: ticket.isGLPI || false,
+          glpiNumber: ticket.glpiNumber || '',
+          createdAt: ticket.createdAt
+        }));
+      
+      console.log(`✅ ${calls.length} appels convertis (${jsonData.data.tickets.length - calls.length} archivés ignorés)`);
+    } else if (Array.isArray(jsonData)) {
+      // Format nouveau: [{caller: ..., reason: ..., ...}]
+      calls = jsonData;
+    } else {
+      return res.status(400).json({ 
+        error: 'Format JSON invalide. Attendu: tableau d\'appels ou export v2.0.7' 
+      });
     }
 
     let imported = 0;
