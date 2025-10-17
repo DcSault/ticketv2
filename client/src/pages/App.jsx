@@ -232,7 +232,7 @@ function App() {
                 <option value="all">🌍 Tous les tenants</option>
                 {tenants.map(tenant => (
                   <option key={tenant.id} value={tenant.id}>
-                    {tenant.name}
+                    {tenant.display_name}
                   </option>
                 ))}
               </select>
