@@ -123,18 +123,20 @@ exports.getStatistics = async (req, res) => {
     }
 
     // Appels par heure (pour aujourd'hui ou pour un jour spécifique)
-    // Note: Les timestamps sont en UTC, il faut les convertir en heure locale Europe/Paris pour l'affichage
+    // Note: Les timestamps sont en UTC, conversion automatique en Europe/Paris (gère été/hiver automatiquement)
     let callsByHourResult = null;
+    const timezone = 'Europe/Paris'; // Changement d'heure automatique (UTC+1 en hiver, UTC+2 en été)
+    
     if (period === 'day' && !startDate && !endDate) {
       // Aujourd'hui - afficher de la première heure avec appels jusqu'à l'heure actuelle (en heure locale)
       callsByHourResult = await pool.query(
         `WITH hour_range AS (
           SELECT 
-            COALESCE(MIN(EXTRACT(HOUR FROM created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')::integer), 
-                     EXTRACT(HOUR FROM NOW() AT TIME ZONE 'Europe/Paris')::integer) as min_hour,
-            EXTRACT(HOUR FROM NOW() AT TIME ZONE 'Europe/Paris')::integer as max_hour
+            COALESCE(MIN(EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE $2))::integer), 
+                     EXTRACT(HOUR FROM (NOW() AT TIME ZONE $2))::integer) as min_hour,
+            EXTRACT(HOUR FROM (NOW() AT TIME ZONE $2))::integer as max_hour
           FROM calls
-          WHERE tenant_id = $1 AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') = CURRENT_DATE
+          WHERE tenant_id = $1 AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE $2) = CURRENT_DATE
         ),
         hours AS (
           SELECT generate_series(
@@ -146,22 +148,22 @@ exports.getStatistics = async (req, res) => {
           h.hour,
           COALESCE(COUNT(c.id), 0) as count
         FROM hours h
-        LEFT JOIN calls c ON EXTRACT(HOUR FROM c.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') = h.hour 
+        LEFT JOIN calls c ON EXTRACT(HOUR FROM (c.created_at AT TIME ZONE 'UTC' AT TIME ZONE $2)) = h.hour 
           AND c.tenant_id = $1 
-          AND DATE(c.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') = CURRENT_DATE
+          AND DATE(c.created_at AT TIME ZONE 'UTC' AT TIME ZONE $2) = CURRENT_DATE
         GROUP BY h.hour
         ORDER BY h.hour`,
-        [tenantId]
+        [tenantId, timezone]
       );
     } else if (startDate && endDate && startDate === endDate) {
       // Un jour spécifique (comme Hier) - afficher de la première à la dernière heure avec appels (en heure locale)
       callsByHourResult = await pool.query(
         `WITH hour_range AS (
           SELECT 
-            COALESCE(MIN(EXTRACT(HOUR FROM created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')::integer), 0) as min_hour,
-            COALESCE(MAX(EXTRACT(HOUR FROM created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')::integer), 23) as max_hour
+            COALESCE(MIN(EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE $2))::integer), 0) as min_hour,
+            COALESCE(MAX(EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE $2))::integer), 23) as max_hour
           FROM calls
-          WHERE tenant_id = $1 AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') = $2::date
+          WHERE tenant_id = $1 AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE $2) = $3::date
         ),
         hours AS (
           SELECT generate_series(
@@ -173,12 +175,12 @@ exports.getStatistics = async (req, res) => {
           h.hour,
           COALESCE(COUNT(c.id), 0) as count
         FROM hours h
-        LEFT JOIN calls c ON EXTRACT(HOUR FROM c.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') = h.hour 
+        LEFT JOIN calls c ON EXTRACT(HOUR FROM (c.created_at AT TIME ZONE 'UTC' AT TIME ZONE $2)) = h.hour 
           AND c.tenant_id = $1 
-          AND DATE(c.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') = $2::date
+          AND DATE(c.created_at AT TIME ZONE 'UTC' AT TIME ZONE $2) = $3::date
         GROUP BY h.hour
         ORDER BY h.hour`,
-        [tenantId, startDate]
+        [tenantId, timezone, startDate]
       );
     }
 
