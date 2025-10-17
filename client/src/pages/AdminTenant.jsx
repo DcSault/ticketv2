@@ -14,7 +14,8 @@ function AdminTenant() {
     username: '',
     password: '',
     fullName: '',
-    role: 'user'
+    role: 'user',
+    noPasswordLogin: false
   });
 
   useEffect(() => {
@@ -89,21 +90,22 @@ function AdminTenant() {
       username: u.username,
       password: '',
       fullName: u.full_name || '',
-      role: u.role
+      role: u.role,
+      noPasswordLogin: u.no_password_login || false
     });
     setShowUserModal(true);
   };
 
   const openCreateModal = () => {
     setEditingUser(null);
-    setUserForm({ username: '', password: '', fullName: '', role: 'user' });
+    setUserForm({ username: '', password: '', fullName: '', role: 'user', noPasswordLogin: false });
     setShowUserModal(true);
   };
 
   const closeModal = () => {
     setShowUserModal(false);
     setEditingUser(null);
-    setUserForm({ username: '', password: '', fullName: '', role: 'user' });
+    setUserForm({ username: '', password: '', fullName: '', role: 'user', noPasswordLogin: false });
   };
 
   return (
@@ -226,18 +228,34 @@ function AdminTenant() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mot de passe {!editingUser && '*'}
+                <label className="flex items-center gap-2 mb-3">
+                  <input
+                    type="checkbox"
+                    checked={userForm.noPasswordLogin}
+                    onChange={(e) => setUserForm({ ...userForm, noPasswordLogin: e.target.checked })}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    🔓 Connexion sans mot de passe
+                  </span>
                 </label>
-                <input
-                  type="password"
-                  className="input"
-                  value={userForm.password}
-                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                  required={!editingUser}
-                  placeholder={editingUser ? 'Laisser vide pour ne pas changer' : ''}
-                />
               </div>
+
+              {!userForm.noPasswordLogin && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mot de passe {!editingUser && '*'}
+                  </label>
+                  <input
+                    type="password"
+                    className="input"
+                    value={userForm.password}
+                    onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                    required={!editingUser}
+                    placeholder={editingUser ? 'Laisser vide pour ne pas changer' : ''}
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

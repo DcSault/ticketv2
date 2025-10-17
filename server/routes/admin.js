@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const adminController = require('../controllers/adminController');
-const { authenticateToken, requireGlobalAdmin } = require('../middleware/auth');
+const { authenticateToken, requireGlobalAdmin, requireTenantAdmin } = require('../middleware/auth');
 
 // Configuration multer pour upload fichier JSON
 const storage = multer.memoryStorage();
@@ -18,26 +18,25 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
 });
 
-// Toutes les routes admin nécessitent le rôle global_admin
+// Toutes les routes nécessitent l'authentification
 router.use(authenticateToken);
-router.use(requireGlobalAdmin);
 
-// Gestion des tenants
-router.get('/tenants', adminController.getTenants);
-router.post('/tenants', adminController.createTenant);
-router.put('/tenants/:id', adminController.updateTenant);
-router.delete('/tenants/:id', adminController.deleteTenant);
+// Gestion des tenants (seulement global_admin)
+router.get('/tenants', requireTenantAdmin, adminController.getTenants);
+router.post('/tenants', requireGlobalAdmin, adminController.createTenant);
+router.put('/tenants/:id', requireGlobalAdmin, adminController.updateTenant);
+router.delete('/tenants/:id', requireGlobalAdmin, adminController.deleteTenant);
 
-// Gestion des utilisateurs
-router.get('/users', adminController.getUsers);
-router.post('/users', adminController.createUser);
-router.put('/users/:id', adminController.updateUser);
-router.delete('/users/:id', adminController.deleteUser);
+// Gestion des utilisateurs (tenant_admin peut gérer les users de son tenant)
+router.get('/users', requireTenantAdmin, adminController.getUsers);
+router.post('/users', requireTenantAdmin, adminController.createUser);
+router.put('/users/:id', requireTenantAdmin, adminController.updateUser);
+router.delete('/users/:id', requireTenantAdmin, adminController.deleteUser);
 
-// Import d'appels
-router.post('/import-calls', upload.single('file'), adminController.importCalls);
+// Import d'appels (seulement global_admin)
+router.post('/import-calls', requireGlobalAdmin, upload.single('file'), adminController.importCalls);
 
-// Statistiques globales
-router.get('/statistics', adminController.getGlobalStatistics);
+// Statistiques globales (seulement global_admin)
+router.get('/statistics', requireGlobalAdmin, adminController.getGlobalStatistics);
 
 module.exports = router;

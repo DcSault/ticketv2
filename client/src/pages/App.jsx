@@ -9,10 +9,10 @@ function App() {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Tenant selection for global_admin
+  // Tenant selection for global_admin and viewer
   const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState(
-    user?.role === 'global_admin' 
+    (user?.role === 'global_admin' || user?.role === 'viewer')
       ? localStorage.getItem('selectedTenantId') || 'all'
       : null
   );
@@ -40,7 +40,7 @@ function App() {
   const [editingCall, setEditingCall] = useState(null);
 
   useEffect(() => {
-    if (user?.role === 'global_admin') {
+    if (user?.role === 'global_admin' || user?.role === 'viewer') {
       loadTenants();
     }
   }, []);
@@ -71,7 +71,7 @@ function App() {
   const loadCalls = async () => {
     try {
       const params = { limit: 100 };
-      if (user?.role === 'global_admin' && selectedTenant && selectedTenant !== 'all') {
+      if ((user?.role === 'global_admin' || user?.role === 'viewer') && selectedTenant && selectedTenant !== 'all') {
         params.tenantId = selectedTenant;
       }
       const response = await callService.getCalls(params);
@@ -222,7 +222,7 @@ function App() {
             >
               📦 Archives
             </button>
-            {user?.role === 'global_admin' && (
+            {(user?.role === 'global_admin' || user?.role === 'viewer') && (
               <>
                 <select
                   value={selectedTenant || 'all'}
@@ -236,12 +236,14 @@ function App() {
                     </option>
                   ))}
                 </select>
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-                >
-                  🛠️ Admin
-                </button>
+                {user?.role === 'global_admin' && (
+                  <button
+                    onClick={() => navigate('/admin')}
+                    className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                  >
+                    🛠️ Admin
+                  </button>
+                )}
               </>
             )}
             {user?.role === 'tenant_admin' && (
@@ -267,7 +269,8 @@ function App() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Form */}
+        {/* Form - Hidden for viewers */}
+        {user?.role !== 'viewer' && (
         <div className="card mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Nouvel Appel</h2>
           
@@ -461,6 +464,7 @@ function App() {
             </button>
           </form>
         </div>
+        )}
 
         {/* Liste des appels */}
         <div className="card">
@@ -857,6 +861,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
             </div>
           )}
         </div>
+        {authService.getCurrentUser()?.role !== 'viewer' && (
         <div className="flex gap-2">
           <button
             onClick={onEdit}
@@ -877,6 +882,7 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
             Supprimer
           </button>
         </div>
+        )}
       </div>
     </div>
   );

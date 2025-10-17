@@ -3,7 +3,7 @@ const pool = require('../config/database');
 // Obtenir les statistiques
 exports.getStatistics = async (req, res) => {
   const { period = 'day', startDate, endDate } = req.query;
-  const tenantId = req.user.role === 'global_admin' ? req.query.tenantId : req.user.tenantId;
+  const tenantId = (req.user.role === 'global_admin' || req.user.role === 'viewer') ? req.query.tenantId : req.user.tenantId;
 
   try {
     let dateFilter = '';
@@ -170,7 +170,7 @@ exports.getStatistics = async (req, res) => {
 // Exporter les données
 exports.exportData = async (req, res) => {
   const { startDate, endDate } = req.query;
-  const tenantId = req.user.role === 'global_admin' ? req.query.tenantId : req.user.tenantId;
+  const tenantId = (req.user.role === 'global_admin' || req.user.role === 'viewer') ? req.query.tenantId : req.user.tenantId;
 
   try {
     let query = `

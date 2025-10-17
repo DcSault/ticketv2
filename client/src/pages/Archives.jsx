@@ -18,10 +18,10 @@ function Archives() {
     isGlpi: null
   });
 
-  // Tenant selection for global_admin
+  // Tenant selection for global_admin and viewer
   const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState(
-    user?.role === 'global_admin' 
+    (user?.role === 'global_admin' || user?.role === 'viewer')
       ? localStorage.getItem('selectedTenantId') || 'all'
       : null
   );
@@ -32,7 +32,7 @@ function Archives() {
   const [tagSuggestions, setTagSuggestions] = useState([]);
 
   useEffect(() => {
-    if (user?.role === 'global_admin') {
+    if (user?.role === 'global_admin' || user?.role === 'viewer') {
       loadTenants();
     }
   }, []);
@@ -70,7 +70,7 @@ function Archives() {
       
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
-      if (user?.role === 'global_admin' && selectedTenant && selectedTenant !== 'all') {
+      if ((user?.role === 'global_admin' || user?.role === 'viewer') && selectedTenant && selectedTenant !== 'all') {
         params.tenantId = selectedTenant;
       }
       
@@ -197,7 +197,7 @@ function Archives() {
             >
               📊 Statistiques
             </button>
-            {user?.role === 'global_admin' && (
+            {(user?.role === 'global_admin' || user?.role === 'viewer') && (
               <>
                 <select
                   value={selectedTenant || 'all'}
@@ -211,12 +211,14 @@ function Archives() {
                     </option>
                   ))}
                 </select>
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-                >
-                  🛠️ Admin
-                </button>
+                {user?.role === 'global_admin' && (
+                  <button
+                    onClick={() => navigate('/admin')}
+                    className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                  >
+                    🛠️ Admin
+                  </button>
+                )}
               </>
             )}
             {user?.role === 'tenant_admin' && (
@@ -442,14 +444,16 @@ function Archives() {
                         </div>
                       )}
                     </div>
-                    <div className="ml-4">
-                      <button
-                        onClick={() => handleUnarchive(call.id)}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                      >
-                        ↩️ Désarchiver
-                      </button>
-                    </div>
+                    {user?.role !== 'viewer' && (
+                      <div className="ml-4">
+                        <button
+                          onClick={() => handleUnarchive(call.id)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          ↩️ Désarchiver
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

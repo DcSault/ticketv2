@@ -93,6 +93,8 @@ exports.deleteTenant = async (req, res) => {
 // Obtenir tous les utilisateurs
 exports.getUsers = async (req, res) => {
   const { tenantId } = req.query;
+  const userRole = req.user.role;
+  const userTenantId = req.user.tenantId;
 
   try {
     let query = `
@@ -104,13 +106,20 @@ exports.getUsers = async (req, res) => {
         u.tenant_id,
         t.name as tenant_name,
         t.display_name as tenant_display_name,
+        u.no_password_login,
         u.created_at
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
     `;
 
     const params = [];
-    if (tenantId) {
+    
+    // Si tenant_admin, voir seulement les users de son tenant
+    if (userRole === 'tenant_admin') {
+      query += ' WHERE u.tenant_id = $1';
+      params.push(userTenantId);
+    } else if (tenantId) {
+      // Si global_admin avec filtre tenant
       query += ' WHERE u.tenant_id = $1';
       params.push(tenantId);
     }
@@ -128,6 +137,8 @@ exports.getUsers = async (req, res) => {
 // Créer un utilisateur
 exports.createUser = async (req, res) => {
   const { username, password, fullName, role, tenantId, noPasswordLogin } = req.body;
+  const userRole = req.user.role;
+  const userTenantId = req.user.tenantId;
 
   if (!username) {
     return res.status(400).json({ error: 'Username is required' });
@@ -137,9 +148,17 @@ exports.createUser = async (req, res) => {
     return res.status(400).json({ error: 'Password is required when noPasswordLogin is false' });
   }
 
-  if (!['user', 'tenant_admin', 'global_admin'].includes(role)) {
+  if (!['user', 'tenant_admin', 'global_admin', 'viewer'].includes(role)) {
     return res.status(400).json({ error: 'Invalid role' });
   }
+
+  // tenant_admin ne peut pas créer de global_admin ou viewer
+  if (userRole === 'tenant_admin' && (role === 'global_admin' || role === 'viewer')) {
+    return res.status(403).json({ error: 'Tenant admin cannot create global admin or viewer' });
+  }
+
+  // tenant_admin doit créer dans son propre tenant
+  const finalTenantId = userRole === 'tenant_admin' ? userTenantId : (tenantId || null);
 
   try {
     // Si noPasswordLogin est true, utiliser un mot de passe vide haché
@@ -151,7 +170,7 @@ exports.createUser = async (req, res) => {
       `INSERT INTO users (username, password, full_name, role, tenant_id, no_password_login)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, username, full_name, role, tenant_id, no_password_login, created_at`,
-      [username, hashedPassword, fullName, role, tenantId || null, noPasswordLogin || false]
+      [username, hashedPassword, fullName, role, finalTenantId, noPasswordLogin || false]
     );
 
     res.status(201).json(result.rows[0]);
@@ -168,8 +187,25 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
   const { fullName, role, tenantId, password } = req.body;
+  const userRole = req.user.role;
+  const userTenantId = req.user.tenantId;
 
   try {
+    // Vérifier que tenant_admin modifie seulement les users de son tenant
+    if (userRole === 'tenant_admin') {
+      const checkUser = await pool.query('SELECT tenant_id, role FROM users WHERE id = $1', [id]);
+      if (checkUser.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      if (checkUser.rows[0].tenant_id !== userTenantId) {
+        return res.status(403).json({ error: 'Cannot modify users from other tenants' });
+      }
+      // tenant_admin ne peut pas modifier un global_admin ou viewer
+      if (checkUser.rows[0].role === 'global_admin' || checkUser.rows[0].role === 'viewer') {
+        return res.status(403).json({ error: 'Cannot modify global admin or viewer' });
+      }
+    }
+
     let query = 'UPDATE users SET';
     const updates = [];
     const params = [];
@@ -182,15 +218,19 @@ exports.updateUser = async (req, res) => {
     }
 
     if (role !== undefined) {
-      if (!['user', 'tenant_admin', 'global_admin'].includes(role)) {
+      if (!['user', 'tenant_admin', 'global_admin', 'viewer'].includes(role)) {
         return res.status(400).json({ error: 'Invalid role' });
+      }
+      // tenant_admin ne peut pas promouvoir en global_admin ou viewer
+      if (userRole === 'tenant_admin' && (role === 'global_admin' || role === 'viewer')) {
+        return res.status(403).json({ error: 'Cannot assign global admin or viewer role' });
       }
       updates.push(`role = $${paramCount}`);
       params.push(role);
       paramCount++;
     }
 
-    if (tenantId !== undefined) {
+    if (tenantId !== undefined && userRole === 'global_admin') {
       updates.push(`tenant_id = $${paramCount}`);
       params.push(tenantId || null);
       paramCount++;
@@ -241,10 +281,27 @@ exports.updateUser = async (req, res) => {
 // Supprimer un utilisateur
 exports.deleteUser = async (req, res) => {
   const { id } = req.params;
+  const userRole = req.user.role;
+  const userTenantId = req.user.tenantId;
 
   // Empêcher la suppression de l'admin par défaut
   if (parseInt(id) === 1) {
     return res.status(403).json({ error: 'Cannot delete default admin user' });
+  }
+
+  // Vérifier que tenant_admin supprime seulement les users de son tenant
+  if (userRole === 'tenant_admin') {
+    const checkUser = await pool.query('SELECT tenant_id, role FROM users WHERE id = $1', [id]);
+    if (checkUser.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    if (checkUser.rows[0].tenant_id !== userTenantId) {
+      return res.status(403).json({ error: 'Cannot delete users from other tenants' });
+    }
+    // tenant_admin ne peut pas supprimer un global_admin ou viewer
+    if (checkUser.rows[0].role === 'global_admin' || checkUser.rows[0].role === 'viewer') {
+      return res.status(403).json({ error: 'Cannot delete global admin or viewer' });
+    }
   }
 
   try {

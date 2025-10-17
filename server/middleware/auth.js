@@ -36,8 +36,8 @@ const requireTenantAdmin = (req, res, next) => {
 
 // Middleware pour s'assurer que l'utilisateur accède uniquement à ses données tenant
 const ensureTenantAccess = (req, res, next) => {
-  // Les admins globaux peuvent accéder à tout
-  if (req.user.role === 'global_admin') {
+  // Les admins globaux et viewers peuvent accéder à tout
+  if (req.user.role === 'global_admin' || req.user.role === 'viewer') {
     return next();
   }
 
@@ -51,9 +51,18 @@ const ensureTenantAccess = (req, res, next) => {
   next();
 };
 
+// Middleware pour bloquer les actions de modification pour les viewers
+const blockViewerModifications = (req, res, next) => {
+  if (req.user.role === 'viewer') {
+    return res.status(403).json({ error: 'Viewers cannot modify data' });
+  }
+  next();
+};
+
 module.exports = {
   authenticateToken,
   requireGlobalAdmin,
   requireTenantAdmin,
-  ensureTenantAccess
+  ensureTenantAccess,
+  blockViewerModifications
 };
