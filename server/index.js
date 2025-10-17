@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const callRoutes = require('./routes/calls');
 const statisticsRoutes = require('./routes/statistics');
 const adminRoutes = require('./routes/admin');
+const dataManagementRoutes = require('./routes/dataManagement');
 // const { startArchiveJob } = require('./jobs/archiveOldCalls'); // Plus nécessaire
 
 const app = express();
@@ -31,6 +32,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/statistics', statisticsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/data-management', dataManagementRoutes);
 
 // Servir le frontend en production
 if (process.env.NODE_ENV === 'production') {

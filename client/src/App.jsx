@@ -10,6 +10,7 @@ import Statistics from './pages/Statistics';
 import Admin from './pages/Admin';
 import AdminTenant from './pages/AdminTenant';
 import Archives from './pages/Archives';
+import DataManagement from './pages/DataManagement';
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -109,6 +110,15 @@ function AppRouter() {
         element={
           <TenantAdminRoute>
             <AdminTenant />
+          </TenantAdminRoute>
+        }
+      />
+      
+      <Route
+        path="/data-management"
+        element={
+          <TenantAdminRoute>
+            <DataManagement />
           </TenantAdminRoute>
         }
       />

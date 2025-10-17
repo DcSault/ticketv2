@@ -124,6 +124,13 @@ function AdminTenant() {
             <span className="text-gray-600">Administration Tenant</span>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/data-management')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              📋 Gestion des données
+            </button>
+            <span className="text-gray-300">|</span>
             <span className="text-sm text-gray-600">
               {user?.fullName || user?.username}
             </span>
