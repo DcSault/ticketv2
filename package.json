@@ -1,5 +1,5 @@
 {
-  "name": "ticketv2",
+  "name": "callfixv2",
   "version": "1.0.0",
   "description": "Application de suivi d'appels multi-tenant",
   "main": "server/index.js",
