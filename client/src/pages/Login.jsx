@@ -74,11 +74,6 @@ function Login() {
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Identifiants par défaut :</p>
-          <p className="font-mono mt-1">admin / admin123</p>
-        </div>
       </div>
     </div>
   );

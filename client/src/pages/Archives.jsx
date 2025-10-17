@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService, callService } from '../services/api';
+import { authService, callService, adminService } from '../services/api';
 
 function Archives() {
   const navigate = useNavigate();
@@ -18,15 +18,47 @@ function Archives() {
     isGlpi: null
   });
 
+  // Tenant selection for global_admin
+  const [tenants, setTenants] = useState([]);
+  const [selectedTenant, setSelectedTenant] = useState(
+    user?.role === 'global_admin' 
+      ? localStorage.getItem('selectedTenantId') || 'all'
+      : null
+  );
+
   // Suggestions pour autocomplétion
   const [callerSuggestions, setCallerSuggestions] = useState([]);
   const [reasonSuggestions, setReasonSuggestions] = useState([]);
   const [tagSuggestions, setTagSuggestions] = useState([]);
 
   useEffect(() => {
+    if (user?.role === 'global_admin') {
+      loadTenants();
+    }
+  }, []);
+
+  useEffect(() => {
     loadArchivedCalls();
     loadSuggestions();
-  }, [filters]);
+  }, [filters, selectedTenant]);
+
+  const loadTenants = async () => {
+    try {
+      const response = await adminService.getTenants();
+      setTenants(response.data);
+    } catch (error) {
+      console.error('Error loading tenants:', error);
+    }
+  };
+
+  const handleTenantChange = (tenantId) => {
+    setSelectedTenant(tenantId);
+    if (tenantId === 'all') {
+      localStorage.removeItem('selectedTenantId');
+    } else {
+      localStorage.setItem('selectedTenantId', tenantId);
+    }
+  };
 
   const loadArchivedCalls = async () => {
     setLoading(true);
@@ -38,6 +70,9 @@ function Archives() {
       
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
+      if (user?.role === 'global_admin' && selectedTenant && selectedTenant !== 'all') {
+        params.tenantId = selectedTenant;
+      }
       
       const response = await callService.getCalls(params);
       
@@ -150,12 +185,26 @@ function Archives() {
               📊 Statistiques
             </button>
             {user?.role === 'global_admin' && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-              >
-                🛠️ Admin
-              </button>
+              <>
+                <select
+                  value={selectedTenant || 'all'}
+                  onChange={(e) => handleTenantChange(e.target.value)}
+                  className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">🌍 Tous les tenants</option>
+                  {tenants.map(tenant => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                >
+                  🛠️ Admin
+                </button>
+              </>
             )}
             {user?.role === 'tenant_admin' && (
               <button
