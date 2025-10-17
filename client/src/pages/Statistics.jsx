@@ -40,6 +40,8 @@ function Statistics() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showRefreshNotification, setShowRefreshNotification] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
   
   // Tenant selection for global_admin and viewer
   const canSelectTenant = user?.role === 'global_admin' || user?.role === 'viewer';
@@ -57,11 +59,11 @@ function Statistics() {
   }, []);
 
   useEffect(() => {
-    loadStatistics();
+    loadStatistics(false); // Premier chargement sans notification
     
     // Actualisation automatique toutes les 30 secondes
     const interval = setInterval(() => {
-      loadStatistics();
+      loadStatistics(true); // Chargements suivants avec notification
     }, 30000); // 30 secondes
 
     // Nettoyer l'interval quand le composant est démonté ou les dépendances changent
@@ -87,7 +89,7 @@ function Statistics() {
     }
   };
 
-  const loadStatistics = async () => {
+  const loadStatistics = async (showNotification = false) => {
     setLoading(true);
     try {
       const params = { period };
@@ -99,6 +101,13 @@ function Statistics() {
 
       const response = await statisticsService.getStatistics(params);
       setStats(response.data);
+      
+      // Afficher la notification si demandé
+      if (showNotification) {
+        setLastRefreshTime(new Date());
+        setShowRefreshNotification(true);
+        setTimeout(() => setShowRefreshNotification(false), 2000); // Cache après 2 secondes
+      }
     } catch (error) {
       console.error('Error loading statistics:', error);
     } finally {
@@ -221,11 +230,51 @@ function Statistics() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Indicateur d'actualisation automatique */}
-        <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">
-          <div className="flex items-center gap-1">
-            <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            <span>Actualisation automatique (30s)</span>
+        {/* Notification d'actualisation */}
+        {showRefreshNotification && (
+          <div className="fixed top-4 right-4 z-50 animate-fade-in">
+            <div className="bg-white border border-green-300 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <div>
+                <p className="font-medium text-gray-800">Données actualisées</p>
+                <p className="text-xs text-gray-500">
+                  {lastRefreshTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Indicateur d'actualisation automatique - Version améliorée */}
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-sm">
+                <svg className="w-5 h-5 text-blue-600 animate-spin" style={{ animationDuration: '3s' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  Actualisation automatique active
+                </p>
+                <p className="text-sm text-gray-600">Les statistiques se mettent à jour toutes les 30 secondes</p>
+              </div>
+            </div>
+            <button
+              onClick={() => loadStatistics(true)}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              Actualiser maintenant
+            </button>
           </div>
         </div>
 
