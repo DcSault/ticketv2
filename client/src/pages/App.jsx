@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService, callService, adminService } from '../services/api';
-import ThemeToggle from '../components/ThemeToggle';
+import { Window, Button, Icon, Taskbar } from '../components/win98';
 
 function App() {
   const navigate = useNavigate();
@@ -266,30 +266,28 @@ function App() {
     return date.toLocaleDateString('fr-FR', { weekday: 'long' });
   };
 
+  const tasks = [
+    {
+      id: 'app',
+      title: 'CallFixV2 - Application',
+      icon: 'phone'
+    }
+  ];
+
   return (
-    <div className="min-h-screen">
+    <div className="win98-body">
       {/* Quick Add Modal */}
       {showQuickForm && user?.role !== 'viewer' && (
-        <div className="modal-overlay animate-fade-in">
-          <div className="modal animate-scale-in">
-            <div className="modal-header">
-              <div className="flex items-center gap-3">
-                <div className="icon-box icon-box-green">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-bold text-slate-100">Ajout Rapide</h2>
-              </div>
-              <button
-                onClick={() => setShowQuickForm(false)}
-                className="text-slate-400 hover:text-slate-200 text-2xl transition-colors"
-              >
-                ×
-              </button>
-            </div>
-
-            <form onSubmit={handleQuickSubmit} className="modal-body space-y-4">
+        <div className="win98-modal-overlay">
+          <Window
+            title="Ajout Rapide"
+            icon={<Icon type="phone" size={16} />}
+            width="500px"
+            height="auto"
+            onClose={() => setShowQuickForm(false)}
+          >
+            <form onSubmit={handleQuickSubmit} style={{ padding: '12px', backgroundColor: '#c0c0c0' }}>
+              <div style={{ marginBottom: '12px' }}>
               {/* Caller */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">

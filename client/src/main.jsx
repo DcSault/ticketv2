@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import AppRouter from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
 import './index.css';
+import './styles/windows98.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
