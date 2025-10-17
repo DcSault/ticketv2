@@ -94,6 +94,22 @@ exports.getStatistics = async (req, res) => {
       params
     );
 
+    // Appels par heure (uniquement si période = jour actuel)
+    let callsByHourResult = null;
+    if (period === 'day' && !startDate && !endDate) {
+      callsByHourResult = await pool.query(
+        `SELECT 
+          EXTRACT(HOUR FROM created_at) as hour,
+          COUNT(*) as count
+         FROM calls
+         WHERE tenant_id = $1 
+         AND DATE(created_at) = CURRENT_DATE
+         GROUP BY EXTRACT(HOUR FROM created_at)
+         ORDER BY hour`,
+        [tenantId]
+      );
+    }
+
     res.json({
       summary: {
         total: parseInt(totalResult.rows[0].total),
@@ -103,7 +119,8 @@ exports.getStatistics = async (req, res) => {
       topCallers: topCallersResult.rows,
       topReasons: topReasonsResult.rows,
       topTags: topTagsResult.rows,
-      callsByDay: callsByDayResult.rows
+      callsByDay: callsByDayResult.rows,
+      callsByHour: callsByHourResult ? callsByHourResult.rows : null
     });
   } catch (error) {
     console.error('Get statistics error:', error);

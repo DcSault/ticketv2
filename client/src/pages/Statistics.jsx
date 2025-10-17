@@ -215,46 +215,78 @@ function Statistics() {
               </div>
             </div>
 
-            {/* Graphique principal: Évolution des appels */}
-            <div className="card mb-8">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Évolution des appels</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={[...stats.callsByDay].sort((a, b) => new Date(a.date) - new Date(b.date))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={(date) => {
-                      const d = new Date(date);
-                      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-                    }}
-                    stroke="#6B7280"
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip 
-                    labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { 
-                      weekday: 'long',
-                      day: '2-digit', 
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                    contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="count" 
-                    stroke="#3B82F6" 
-                    name="Appels" 
-                    strokeWidth={3}
-                    dot={{ fill: '#3B82F6', r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {/* Graphique horaire (uniquement pour aujourd'hui) */}
+            {stats.callsByHour && stats.callsByHour.length > 0 && (
+              <div className="card mb-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Appels par heure (Aujourd'hui)</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={stats.callsByHour}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis 
+                      dataKey="hour" 
+                      tickFormatter={(hour) => `${hour}h`}
+                      stroke="#6B7280"
+                    />
+                    <YAxis stroke="#6B7280" allowDecimals={false} />
+                    <Tooltip 
+                      labelFormatter={(hour) => `${hour}h00 - ${hour}h59`}
+                      contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                    />
+                    <Bar 
+                      dataKey="count" 
+                      fill="#3B82F6" 
+                      name="Appels" 
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Graphique principal: Évolution des appels (par jour) */}
+            {stats.callsByDay && stats.callsByDay.length > 0 && (
+              <div className="card mb-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">
+                  {stats.callsByHour ? 'Évolution sur la période' : 'Évolution des appels'}
+                </h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={[...stats.callsByDay].sort((a, b) => new Date(a.date) - new Date(b.date))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis 
+                      dataKey="date" 
+                      tickFormatter={(date) => {
+                        const d = new Date(date);
+                        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+                      }}
+                      stroke="#6B7280"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis stroke="#6B7280" allowDecimals={false} />
+                    <Tooltip 
+                      labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { 
+                        weekday: 'long',
+                        day: '2-digit', 
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                      contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="count" 
+                      stroke="#3B82F6" 
+                      name="Appels" 
+                      strokeWidth={3}
+                      dot={{ fill: '#3B82F6', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
 
             {/* Graphiques en camembert */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -334,7 +366,7 @@ function Statistics() {
                     textAnchor="end"
                     height={60}
                   />
-                  <YAxis stroke="#6B7280" />
+                  <YAxis stroke="#6B7280" allowDecimals={false} />
                   <Tooltip 
                     labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { 
                       weekday: 'long',
