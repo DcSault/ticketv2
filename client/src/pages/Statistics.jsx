@@ -253,8 +253,11 @@ function Statistics() {
                 <h3 className="text-lg font-bold text-gray-800 mb-4">
                   {stats.callsByHour ? 'Évolution sur la période' : 'Évolution des appels'}
                 </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={[...stats.callsByDay].sort((a, b) => new Date(a.date) - new Date(b.date))}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart 
+                    data={[...stats.callsByDay].sort((a, b) => new Date(a.date) - new Date(b.date))}
+                    margin={{ top: 5, right: 30, left: 0, bottom: 70 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis 
                       dataKey="date" 
@@ -265,7 +268,7 @@ function Statistics() {
                       stroke="#6B7280"
                       angle={-45}
                       textAnchor="end"
-                      height={80}
+                      height={70}
                     />
                     <YAxis 
                       stroke="#6B7280" 
@@ -354,12 +357,15 @@ function Statistics() {
             {/* Distribution des 7 derniers jours */}
             <div className="card mb-8">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Appels des 7 derniers jours</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={[...stats.callsByDay]
-                  .sort((a, b) => new Date(b.date) - new Date(a.date))
-                  .slice(0, 7)
-                  .reverse()
-                }>
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart 
+                  data={[...stats.callsByDay]
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .slice(0, 7)
+                    .reverse()
+                  }
+                  margin={{ top: 5, right: 30, left: 0, bottom: 50 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis 
                     dataKey="date" 
@@ -372,7 +378,7 @@ function Statistics() {
                     stroke="#6B7280"
                     angle={-15}
                     textAnchor="end"
-                    height={60}
+                    height={50}
                   />
                   <YAxis 
                     stroke="#6B7280" 
