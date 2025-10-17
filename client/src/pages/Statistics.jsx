@@ -58,6 +58,14 @@ function Statistics() {
 
   useEffect(() => {
     loadStatistics();
+    
+    // Actualisation automatique toutes les 30 secondes
+    const interval = setInterval(() => {
+      loadStatistics();
+    }, 30000); // 30 secondes
+
+    // Nettoyer l'interval quand le composant est démonté ou les dépendances changent
+    return () => clearInterval(interval);
   }, [period, startDate, endDate, selectedTenant]);
 
   const loadTenants = async () => {
@@ -213,6 +221,14 @@ function Statistics() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Indicateur d'actualisation automatique */}
+        <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span>Actualisation automatique (30s)</span>
+          </div>
+        </div>
+
         {/* Filtres */}
         <div className="card mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Filtres</h2>
