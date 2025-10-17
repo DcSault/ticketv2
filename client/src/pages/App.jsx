@@ -438,8 +438,18 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, formatD
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const [currentTag, setCurrentTag] = useState('');
 
+  // Réinitialiser editData quand on passe en mode édition
   useEffect(() => {
     if (isEditing) {
+      setEditData({
+        caller: call.caller_name,
+        reason: call.reason_name || '',
+        tags: call.tags?.filter(t => t).map(t => t.name) || [],
+        isGlpi: call.is_glpi,
+        glpiNumber: call.glpi_number || '',
+        isBlocking: call.is_blocking,
+        createdAt: call.created_at
+      });
       loadSuggestions();
     }
   }, [isEditing]);

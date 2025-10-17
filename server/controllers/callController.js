@@ -11,7 +11,7 @@ exports.getCalls = async (req, res) => {
         c.*,
         json_agg(
           json_build_object('id', t.id, 'name', t.name)
-        ) FILTER (WHERE t.id IS NOT NULL) as tags,
+        ) FILTER (WHERE t.id IS NOT NULL AND t.tenant_id = c.tenant_id) as tags,
         cu.username as created_by_username,
         cu.full_name as created_by_name,
         mu.username as modified_by_username,
