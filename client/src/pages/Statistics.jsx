@@ -230,7 +230,7 @@ function Statistics() {
                     <YAxis 
                       stroke="#6B7280" 
                       allowDecimals={false}
-                      domain={[0, 'auto']}
+                      domain={[0, 'dataMax + 2']}
                     />
                     <Tooltip 
                       labelFormatter={(hour) => `${hour}h00 - ${hour}h59`}
@@ -273,7 +273,7 @@ function Statistics() {
                     <YAxis 
                       stroke="#6B7280" 
                       allowDecimals={false}
-                      domain={[0, 'auto']}
+                      domain={[0, 'dataMax + 2']}
                     />
                     <Tooltip 
                       labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { 
@@ -383,7 +383,7 @@ function Statistics() {
                   <YAxis 
                     stroke="#6B7280" 
                     allowDecimals={false}
-                    domain={[0, 'auto']}
+                    domain={[0, 'dataMax + 2']}
                   />
                   <Tooltip 
                     labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { 
