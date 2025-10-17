@@ -227,7 +227,11 @@ function Statistics() {
                       tickFormatter={(hour) => `${hour}h`}
                       stroke="#6B7280"
                     />
-                    <YAxis stroke="#6B7280" allowDecimals={false} />
+                    <YAxis 
+                      stroke="#6B7280" 
+                      allowDecimals={false}
+                      domain={[0, 'auto']}
+                    />
                     <Tooltip 
                       labelFormatter={(hour) => `${hour}h00 - ${hour}h59`}
                       contentStyle={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px' }}
@@ -263,7 +267,11 @@ function Statistics() {
                       textAnchor="end"
                       height={80}
                     />
-                    <YAxis stroke="#6B7280" allowDecimals={false} />
+                    <YAxis 
+                      stroke="#6B7280" 
+                      allowDecimals={false}
+                      domain={[0, 'auto']}
+                    />
                     <Tooltip 
                       labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { 
                         weekday: 'long',
@@ -366,7 +374,11 @@ function Statistics() {
                     textAnchor="end"
                     height={60}
                   />
-                  <YAxis stroke="#6B7280" allowDecimals={false} />
+                  <YAxis 
+                    stroke="#6B7280" 
+                    allowDecimals={false}
+                    domain={[0, 'auto']}
+                  />
                   <Tooltip 
                     labelFormatter={(date) => new Date(date).toLocaleDateString('fr-FR', { 
                       weekday: 'long',
