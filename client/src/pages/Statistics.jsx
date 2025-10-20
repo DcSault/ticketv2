@@ -73,7 +73,6 @@ function Statistics() {
   const loadTenants = async () => {
     try {
       const response = await adminService.getTenants();
-      console.log('Tenants loaded:', response.data);
       setTenants(response.data);
     } catch (error) {
       console.error('Error loading tenants:', error);

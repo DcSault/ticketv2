@@ -773,11 +773,6 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
           .map(t => typeof t === 'string' ? t : t.name);
       }
       
-      console.log('Call complet:', call);
-      console.log('call.tags brut:', call.tags);
-      console.log('Type de call.tags:', typeof call.tags, Array.isArray(call.tags));
-      console.log('Tags parsés pour editData:', parsedTags);
-      
       setEditData({
         caller: call.caller_name,
         reason: call.reason_name || '',
