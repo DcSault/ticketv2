@@ -10,7 +10,6 @@ function Home() {
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">TicketV2</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">
               {user?.fullName || user?.username}
