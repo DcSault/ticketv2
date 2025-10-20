@@ -10,7 +10,7 @@ const callRoutes = require('./routes/calls');
 const statisticsRoutes = require('./routes/statistics');
 const adminRoutes = require('./routes/admin');
 const dataManagementRoutes = require('./routes/dataManagement');
-// const { startArchiveJob } = require('./jobs/archiveOldCalls'); // Plus nécessaire
+const { startArchiveJob } = require('./jobs/archiveOldCalls');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -76,8 +76,8 @@ app.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Database: ${process.env.DB_NAME}@${process.env.DB_HOST}`);
   
-  // Note: Les "archives" sont maintenant basées sur la date de création (< aujourd'hui)
-  // Plus besoin de job d'archivage automatique
+  // Démarrer le job d'archivage automatique
+  startArchiveJob();
 });
 
 module.exports = app;
