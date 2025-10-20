@@ -450,9 +450,9 @@ function App() {
             {user?.role === 'global_admin' && (
               <button
                 onClick={() => navigate('/admin')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                className="text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors"
               >
-                🛠️ Admin
+                Admin
               </button>
             )}
             {user?.role === 'tenant_admin' && (

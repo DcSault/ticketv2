@@ -27,7 +27,7 @@ function Home() {
       </nav>
 
       <div className="max-w-4xl mx-auto px-4 py-16">
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 animate-fade-in">
           <h2 className="text-4xl font-bold text-gray-800 mb-4">
             Bienvenue {user?.fullName || user?.username}
           </h2>
@@ -39,7 +39,7 @@ function Home() {
         <div className="grid md:grid-cols-2 gap-6">
           <button
             onClick={() => navigate('/app')}
-            className="card hover:shadow-lg transition-shadow duration-200 text-left group"
+            className="card-interactive text-left group animate-slide-in-left"
           >
             <div className="flex items-start justify-between">
               <div>
@@ -50,7 +50,7 @@ function Home() {
                   Saisir des appels, consulter l'historique et gérer les tickets
                 </p>
               </div>
-              <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-all transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -58,7 +58,7 @@ function Home() {
 
           <button
             onClick={() => navigate('/statistics')}
-            className="card hover:shadow-lg transition-shadow duration-200 text-left group"
+            className="card-interactive text-left group animate-slide-in-right"
           >
             <div className="flex items-start justify-between">
               <div>
@@ -69,7 +69,7 @@ function Home() {
                   Consulter les statistiques et exporter les données
                 </p>
               </div>
-              <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-all transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -78,7 +78,7 @@ function Home() {
           {user?.role === 'global_admin' && (
             <button
               onClick={() => navigate('/admin')}
-              className="card hover:shadow-lg transition-shadow duration-200 text-left group md:col-span-2"
+              className="card-interactive text-left group md:col-span-2 animate-slide-in-up"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -89,7 +89,7 @@ function Home() {
                     Gérer les tenants, utilisateurs et consulter les statistiques globales
                   </p>
                 </div>
-                <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-all transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>

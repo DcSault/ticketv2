@@ -211,17 +211,17 @@ function Statistics() {
             {user?.role === 'global_admin' && (
               <button
                 onClick={() => navigate('/admin')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                className="text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors"
               >
-                🛠️ Admin
+                Admin
               </button>
             )}
             {user?.role === 'tenant_admin' && (
               <button
                 onClick={() => navigate('/admin-tenant')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                className="text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors"
               >
-                👥 Admin Tenant
+                Admin Tenant
               </button>
             )}
             <span className="text-gray-300">|</span>
@@ -300,14 +300,14 @@ function Statistics() {
                 setEndDate('');
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md ${
                 period === 'day' && !startDate && !endDate
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
               disabled={showAdvanced}
             >
-              📅 Aujourd'hui
+              Aujourd'hui
             </button>
             <button
               onClick={() => {
@@ -319,10 +319,10 @@ function Statistics() {
                 setEndDate(yesterdayStr);
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200`}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md bg-gray-100 text-gray-700 hover:bg-gray-200`}
               disabled={showAdvanced}
             >
-              ⏮️ Hier
+              Hier
             </button>
             <button
               onClick={() => {
@@ -331,14 +331,14 @@ function Statistics() {
                 setEndDate('');
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md ${
                 period === 'week' && !startDate && !endDate
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
               disabled={showAdvanced}
             >
-              📆 Cette semaine
+              Cette semaine
             </button>
             <button
               onClick={() => {
@@ -379,13 +379,13 @@ function Statistics() {
             {/* Bouton Avancé */}
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md ${
                 showAdvanced
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              🔧 {showAdvanced ? 'Masquer' : 'Avancé'}
+              {showAdvanced ? 'Masquer' : 'Avancé'}
             </button>
           </div>
 
@@ -427,14 +427,17 @@ function Statistics() {
                     className="btn btn-primary w-full"
                     disabled={!startDate && !endDate}
                   >
-                    ✓ Appliquer
+                    Appliquer
                   </button>
                 </div>
               </div>
               
               {(startDate || endDate) && (
-                <div className="mt-3 text-sm text-gray-600">
-                  ℹ️ Période personnalisée active : 
+                <div className="mt-3 text-sm text-gray-600 flex items-center gap-2 animate-fade-in">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Période personnalisée active :
                   {startDate && <span className="font-semibold"> du {new Date(startDate).toLocaleDateString('fr-FR')}</span>}
                   {endDate && <span className="font-semibold"> au {new Date(endDate).toLocaleDateString('fr-FR')}</span>}
                 </div>
@@ -447,12 +450,12 @@ function Statistics() {
           <>
             {/* Résumé avec 4 cartes */}
             <div className="grid md:grid-cols-4 gap-6 mb-8">
-              <div className="card bg-white border-l-4 border-blue-500">
+              <div className="card bg-white border-l-4 border-blue-500 animate-slide-in-left">
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Total des appels</h3>
                 <p className="text-4xl font-bold text-gray-800">{stats.summary.total}</p>
               </div>
 
-              <div className="card bg-white border-l-4 border-green-500">
+              <div className="card bg-white border-l-4 border-green-500 animate-slide-in-left" style={{ animationDelay: '0.1s' }}>
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Ratio Matin/Après-midi</h3>
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
@@ -467,12 +470,12 @@ function Statistics() {
                 </div>
               </div>
 
-              <div className="card bg-white border-l-4 border-red-500">
+              <div className="card bg-white border-l-4 border-red-500 animate-slide-in-right" style={{ animationDelay: '0.1s' }}>
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Appels bloquants</h3>
                 <p className="text-4xl font-bold text-red-600">{stats.summary.blocking}</p>
               </div>
 
-              <div className="card bg-white border-l-4 border-purple-500">
+              <div className="card bg-white border-l-4 border-purple-500 animate-slide-in-right">
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Heure la plus active</h3>
                 <p className="text-4xl font-bold text-purple-600">{mostActiveTime}</p>
                 {stats.callsByHour && stats.callsByHour.length > 0 && mostActiveTime !== '-' && (

@@ -142,24 +142,24 @@ function DataManagement() {
               </tr>
             </thead>
             <tbody>
-              {data.map((item) => (
-                <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
+              {data.map((item, index) => (
+                <tr key={item.id} className="border-b border-gray-100 table-row-hover animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
                   <td className="py-3 px-4 text-gray-800">{item.name}</td>
                   <td className="py-3 px-4 text-center">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 transition-all hover:shadow-md">
                       {item.usage_count} appel{item.usage_count > 1 ? 's' : ''}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right">
                     <button
                       onClick={() => handleEdit(item, type)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3 transition-all hover:underline"
                     >
                       Modifier
                     </button>
                     <button
                       onClick={() => handleDelete(item, type)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      className="text-red-600 hover:text-red-800 text-sm font-medium transition-all hover:underline"
                     >
                       Supprimer
                     </button>
