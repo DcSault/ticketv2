@@ -9,8 +9,13 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
 });
 
+let connectionLogged = false;
+
 pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL database');
+  if (!connectionLogged) {
+    console.log('✅ Connected to PostgreSQL database');
+    connectionLogged = true;
+  }
 });
 
 pool.on('error', (err) => {
