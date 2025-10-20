@@ -18,9 +18,9 @@ services:
         cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || true &&
         rm -rf /tmp/ticketv2 &&
         echo "Installing dependencies..." &&
-        npm install --production=false &&
+        npm install &&
         echo "Installing client dependencies..." &&
-        cd client && npm install --production=false && cd .. &&
+        cd client && npm install && cd .. &&
         echo "Building frontend for production..." &&
         cd client && npm run build && cd .. &&
         echo "Verifying build..." &&
