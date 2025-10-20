@@ -129,48 +129,33 @@ services:
         show_progress "ÉTAPE 4/6: Installation dépendances client    "
         
         cd client
-        # Vérifier si node_modules existe et est à jour
-        if [ -d "node_modules" ] && [ -f "package-lock.json" ]; then
-          echo "   🔍 Vérification des dépendances existantes..."
-          if [ "package-lock.json" -nt "node_modules" ]; then
-            show_step "Mise à jour nécessaire des packages client"
-            echo "   📦 Installation en cours (peut prendre 2-3 min)..."
-            echo ""
-            npm install 2>&1 | while IFS= read -r line; do
-              case "$$line" in
-                *"added"*) echo "   ✨ $$line" ;;
-                *"removed"*) echo "   🗑️  $$line" ;;
-                *"changed"*) echo "   🔄 $$line" ;;
-                *"up to date"*) echo "   ✅ $$line" ;;
-                *"packages"*) echo "   📊 $$line" ;;
-              esac
-            done
-            echo ""
-          else
-            echo "   ⚡ Dépendances déjà à jour - Installation ignorée"
-          fi
-        else
-          show_step "Installation des packages client"
-          echo "   📦 Installation en cours (peut prendre 2-3 min)..."
-          echo ""
-          npm install 2>&1 | while IFS= read -r line; do
-            case "$$line" in
-              *"added"*) echo "   ✨ $$line" ;;
-              *"removed"*) echo "   🗑️  $$line" ;;
-              *"changed"*) echo "   🔄 $$line" ;;
-              *"up to date"*) echo "   ✅ $$line" ;;
-              *"packages"*) echo "   📊 $$line" ;;
-            esac
-          done
-          echo ""
+        # Forcer la suppression de node_modules pour éviter les problèmes de cache
+        if [ -d "node_modules" ]; then
+          echo "   🗑️  Nettoyage des anciennes dépendances..."
+          rm -rf node_modules package-lock.json
         fi
         
-        if [ -d "node_modules" ]; then
+        show_step "Installation des packages client"
+        echo "   📦 Installation en cours (peut prendre 2-3 min)..."
+        echo ""
+        npm install 2>&1 | while IFS= read -r line; do
+          case "$$line" in
+            *"added"*) echo "   ✨ $$line" ;;
+            *"removed"*) echo "   🗑️  $$line" ;;
+            *"changed"*) echo "   🔄 $$line" ;;
+            *"up to date"*) echo "   ✅ $$line" ;;
+            *"packages"*) echo "   📊 $$line" ;;
+          esac
+        done
+        echo ""
+        
+        if [ -d "node_modules" ] && [ -f "node_modules/.bin/vite" ]; then
           PACKAGES=$$(find node_modules -maxdepth 1 -type d | wc -l)
           echo "   📦 $$PACKAGES packages installés"
+          echo "   ✅ Vite détecté: $$(node_modules/.bin/vite --version)"
           show_success "Dépendances client prêtes"
         else
-          show_error "Échec installation dépendances client"
+          show_error "Échec installation dépendances client (vite manquant)"
         fi
         cd ..
         
@@ -178,53 +163,33 @@ services:
         show_progress "ÉTAPE 5/6: Build du frontend production       "
         
         cd client
-        # Vérifier si le build existe déjà
-        if [ -d "dist" ] && [ -f "dist/index.html" ]; then
-          echo "   🔍 Vérification du build existant..."
-          # Vérifier si les sources sont plus récentes que le build
-          NEWER_FILES=$$(find src -type f -newer dist/index.html 2>/dev/null | wc -l)
-          if [ "$$NEWER_FILES" -gt 0 ]; then
-            show_step "Rebuild nécessaire (sources modifiées)"
-            echo "   ⚡ Compilation en cours (1-2 min)..."
-            echo ""
-            npm run build 2>&1 | while IFS= read -r line; do
-              case "$$line" in
-                *"vite"*) echo "   ⚡ $$line" ;;
-                *"building"*) echo "   🔨 $$line" ;;
-                *"built"*) echo "   ✅ $$line" ;;
-                *"kB"*) echo "   📦 $$line" ;;
-                *"✓"*) echo "   ✅ $$line" ;;
-              esac
-            done || show_error "Échec du build frontend"
-            echo ""
-          else
-            echo "   ⚡ Build déjà à jour - Compilation ignorée"
-          fi
-        else
-          show_step "Compilation Vite"
-          echo "   ⚡ Compilation en cours (1-2 min)..."
-          echo ""
-          npm run build 2>&1 | while IFS= read -r line; do
-            case "$$line" in
-              *"vite"*) echo "   ⚡ $$line" ;;
-              *"building"*) echo "   🔨 $$line" ;;
-              *"built"*) echo "   ✅ $$line" ;;
-              *"kB"*) echo "   📦 $$line" ;;
-              *"✓"*) echo "   ✅ $$line" ;;
-            esac
-          done || show_error "Échec du build frontend"
-          echo ""
-        fi
+        show_step "Compilation Vite avec npx"
+        echo "   ⚡ Compilation en cours (1-2 min)..."
+        echo ""
+        
+        # Utiliser npx pour s assurer que vite est trouvé
+        npx vite build 2>&1 | while IFS= read -r line; do
+          case "$$line" in
+            *"vite"*) echo "   ⚡ $$line" ;;
+            *"building"*) echo "   🔨 $$line" ;;
+            *"built"*) echo "   ✅ $$line" ;;
+            *"kB"*) echo "   📦 $$line" ;;
+            *"✓"*) echo "   ✅ $$line" ;;
+            *"transforming"*) echo "   � $$line" ;;
+            *"computing"*) echo "   � $$line" ;;
+          esac
+        done || show_error "Échec du build frontend"
+        echo ""
         cd ..
         
         show_step "Vérification du build"
-        if [ -d "/app/client/dist" ]; then
+        if [ -d "/app/client/dist" ] && [ -f "/app/client/dist/index.html" ]; then
           FILES=$$(find /app/client/dist -type f | wc -l)
-          SIZE=$$(du -sh /app/client/dist | cut -f1)
+          SIZE=$$(du -sh /app/client/dist 2>/dev/null | cut -f1)
           echo "   📊 $$FILES fichiers générés ($$SIZE)"
           show_success "Frontend prêt"
         else
-          show_error "Le dossier dist n a pas été créé"
+          show_error "Le dossier dist n a pas été créé correctement"
         fi
         
         # Étape 6: Configuration de la base de données
