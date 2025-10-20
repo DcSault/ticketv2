@@ -18,14 +18,7 @@ const PORT = process.env.PORT || 3000;
 // Middlewares
 app.use(helmet());
 app.use(cors());
-
-// Logger: mode compact en production, détaillé en dev
-const morganFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev';
-const morganSkip = process.env.NODE_ENV === 'production' 
-  ? (req, res) => res.statusCode < 400 // En prod, logger seulement les erreurs
-  : () => false; // En dev, tout logger
-
-app.use(morgan(morganFormat, { skip: morganSkip }));
+app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

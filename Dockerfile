@@ -15,17 +15,17 @@ WORKDIR /app
 COPY package*.json ./
 COPY client/package*.json ./client/
 
-# Installer les dépendances backend (production only, sans warnings)
-RUN npm ci --omit=dev --quiet
+# Installer les dépendances backend
+RUN npm ci --only=production
 
 # Installer les dépendances frontend
-RUN cd client && npm ci --quiet
+RUN cd client && npm ci
 
 # Copier tout le code source
 COPY . .
 
-# Build le frontend pour la production (sans logs verbeux)
-RUN cd client && npm run build --quiet
+# Build le frontend pour la production
+RUN cd client && npm run build
 
 # Créer un utilisateur non-root pour la sécurité
 RUN addgroup -g 1001 -S nodejs && \

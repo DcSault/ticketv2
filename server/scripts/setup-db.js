@@ -6,9 +6,7 @@ async function setupDatabase() {
   const client = await pool.connect();
   
   try {
-    const isProduction = process.env.NODE_ENV === 'production';
-    
-    if (!isProduction) console.log('🔧 Setting up database...');
+    console.log('🔧 Setting up database...');
     
     // Créer les tables
     await client.query(`
