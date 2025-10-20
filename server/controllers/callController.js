@@ -18,12 +18,15 @@ exports.getCalls = async (req, res) => {
         cu.username as created_by_username,
         cu.full_name as created_by_name,
         mu.username as modified_by_username,
-        mu.full_name as modified_by_name
+        mu.full_name as modified_by_name,
+        au.username as archived_by_username,
+        au.full_name as archived_by_name
       FROM calls c
       LEFT JOIN call_tags ct ON c.id = ct.call_id
       LEFT JOIN tags t ON ct.tag_id = t.id
       LEFT JOIN users cu ON c.created_by = cu.id
       LEFT JOIN users mu ON c.last_modified_by = mu.id
+      LEFT JOIN users au ON c.archived_by = au.id
       WHERE 1=1
     `;
 
@@ -39,9 +42,10 @@ exports.getCalls = async (req, res) => {
     // Filtre selon le statut d'archivage
     if (archived === 'true') {
       query += ' AND c.is_archived = true';
-    } else {
+    } else if (archived === 'false') {
       query += ' AND c.is_archived = false';
     }
+    // Si archived n'est pas défini, on retourne tous les appels
 
     // Filtre de dates personnalisées
     if (startDate && endDate) {
@@ -59,10 +63,14 @@ exports.getCalls = async (req, res) => {
       paramCount++;
     }
 
-    query += ` GROUP BY c.id, cu.username, cu.full_name, mu.username, mu.full_name`;
+    query += ` GROUP BY c.id, cu.username, cu.full_name, mu.username, mu.full_name, au.username, au.full_name`;
     query += ` ORDER BY c.created_at DESC`;
-    query += ` LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
-    params.push(limit, offset);
+    
+    // Si limit est 'all', ne pas ajouter de limite
+    if (limit !== 'all') {
+      query += ` LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+      params.push(limit, offset);
+    }
 
     const result = await pool.query(query, params);
     res.json(result.rows);

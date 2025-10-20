@@ -131,6 +131,13 @@ function AdminTenant() {
               📋 Gestion des données
             </button>
             <span className="text-gray-300">|</span>
+            <button
+              onClick={() => navigate('/export-manager')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              📊 Exports avancés
+            </button>
+            <span className="text-gray-300">|</span>
             <span className="text-sm text-gray-600">
               {user?.fullName || user?.username}
             </span>

@@ -83,10 +83,52 @@ function Home() {
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-                    Administration
+                    Administration Globale
                   </h3>
                   <p className="text-gray-600">
                     Gérer les tenants, utilisateurs et consulter les statistiques globales
+                  </p>
+                </div>
+                <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-all transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          )}
+          
+          {(user?.role === 'tenant_admin' || user?.role === 'global_admin') && (
+            <button
+              onClick={() => navigate('/admin-tenant')}
+              className="card-interactive text-left group animate-slide-in-up"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
+                    Administration Tenant
+                  </h3>
+                  <p className="text-gray-600">
+                    Gérer les utilisateurs et données de votre équipe
+                  </p>
+                </div>
+                <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-all transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          )}
+          
+          {(user?.role === 'tenant_admin' || user?.role === 'global_admin') && (
+            <button
+              onClick={() => navigate('/export-manager')}
+              className="card-interactive text-left group animate-slide-in-up"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
+                    Exports Avancés
+                  </h3>
+                  <p className="text-gray-600">
+                    Exporter les appels jour par jour avec filtres avancés
                   </p>
                 </div>
                 <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-all transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

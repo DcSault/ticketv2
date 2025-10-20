@@ -11,6 +11,7 @@ import Admin from './pages/Admin';
 import AdminTenant from './pages/AdminTenant';
 import Archives from './pages/Archives';
 import DataManagement from './pages/DataManagement';
+import ExportManager from './pages/ExportManager';
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -119,6 +120,15 @@ function AppRouter() {
         element={
           <TenantAdminRoute>
             <DataManagement />
+          </TenantAdminRoute>
+        }
+      />
+      
+      <Route
+        path="/export-manager"
+        element={
+          <TenantAdminRoute>
+            <ExportManager />
           </TenantAdminRoute>
         }
       />
