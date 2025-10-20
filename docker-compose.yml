@@ -8,17 +8,25 @@ services:
     command: |
       sh -c '
         set -e
-        apk add --no-cache git
+        echo "⚙️  Initializing..."
+        apk add --no-cache git >/dev/null 2>&1
         rm -rf /tmp/ticketv2
+        echo "📥 Downloading source code..."
         git clone -q https://github.com/DcSault/ticketv2.git /tmp/ticketv2
         cp -R /tmp/ticketv2/* /app/
         cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || true
         rm -rf /tmp/ticketv2
+        echo "📦 Installing server dependencies..."
         npm install --omit=dev --loglevel=error
+        echo "📦 Installing client dependencies..."
         cd client && npm install --loglevel=error && cd ..
-        cd client && npm run build && cd ..
+        echo "🔨 Building frontend..."
+        cd client && npm run build --loglevel=error && cd ..
+        echo "⏳ Waiting for database..."
         sleep 5
+        echo "🗄️  Setting up database..."
         node server/scripts/setup-db.js
+        echo "🚀 Starting application..."
         npm start
       '
     ports:
