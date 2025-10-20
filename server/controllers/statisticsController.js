@@ -10,19 +10,28 @@ exports.getStatistics = async (req, res) => {
 
   try {
     let dateFilter = '';
-    const params = [tenantId];
+    let tenantFilter = '';
+    const params = [];
+
+    // Gérer le filtre tenant
+    if (tenantId && tenantId !== 'all') {
+      tenantFilter = 'WHERE tenant_id = $1';
+      params.push(tenantId);
+    } else {
+      tenantFilter = 'WHERE 1=1'; // Tous les tenants
+    }
 
     if (startDate && endDate) {
       // Utiliser >= et < pour inclure toute la journée de fin
-      dateFilter = "AND created_at >= $2::date AND created_at < ($3::date + INTERVAL '1 day')";
+      dateFilter = `AND created_at >= $${params.length + 1}::date AND created_at < ($${params.length + 2}::date + INTERVAL '1 day')`;
       params.push(startDate, endDate);
     } else if (startDate) {
       // Seulement date de début
-      dateFilter = "AND created_at >= $2::date";
+      dateFilter = `AND created_at >= $${params.length + 1}::date`;
       params.push(startDate);
     } else if (endDate) {
       // Seulement date de fin
-      dateFilter = "AND created_at < ($2::date + INTERVAL '1 day')";
+      dateFilter = `AND created_at < ($${params.length + 1}::date + INTERVAL '1 day')`;
       params.push(endDate);
     } else {
       // Calculer la date de début selon la période
@@ -44,19 +53,19 @@ exports.getStatistics = async (req, res) => {
 
     // Total d'appels (incluant les archivés)
     const totalResult = await pool.query(
-      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter}`,
+      `SELECT COUNT(*) as total FROM calls ${tenantFilter} ${dateFilter}`,
       params
     );
 
     // Appels bloquants (incluant les archivés)
     const blockingResult = await pool.query(
-      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter} AND is_blocking = true`,
+      `SELECT COUNT(*) as total FROM calls ${tenantFilter} ${dateFilter} AND is_blocking = true`,
       params
     );
 
     // Tickets GLPI (incluant les archivés)
     const glpiResult = await pool.query(
-      `SELECT COUNT(*) as total FROM calls WHERE tenant_id = $1 ${dateFilter} AND is_glpi = true`,
+      `SELECT COUNT(*) as total FROM calls ${tenantFilter} ${dateFilter} AND is_glpi = true`,
       params
     );
 
@@ -64,7 +73,7 @@ exports.getStatistics = async (req, res) => {
     const topCallersResult = await pool.query(
       `SELECT caller_name, COUNT(*) as count
        FROM calls
-       WHERE tenant_id = $1 ${dateFilter}
+       ${tenantFilter} ${dateFilter}
        GROUP BY caller_name
        ORDER BY count DESC
        LIMIT 10`,
@@ -75,7 +84,7 @@ exports.getStatistics = async (req, res) => {
     const topReasonsResult = await pool.query(
       `SELECT reason_name, COUNT(*) as count
        FROM calls
-       WHERE tenant_id = $1 ${dateFilter} AND reason_name IS NOT NULL
+       ${tenantFilter} ${dateFilter} AND reason_name IS NOT NULL
        GROUP BY reason_name
        ORDER BY count DESC
        LIMIT 10`,
@@ -83,17 +92,29 @@ exports.getStatistics = async (req, res) => {
     );
 
     // Top tags (incluant les archivés)
-    const topTagsResult = await pool.query(
-      `SELECT t.name, COUNT(*) as count
+    let topTagsQuery, topTagsParams;
+    if (tenantId && tenantId !== 'all') {
+      topTagsQuery = `SELECT t.name, COUNT(*) as count
        FROM call_tags ct
        JOIN tags t ON ct.tag_id = t.id
        JOIN calls c ON ct.call_id = c.id
        WHERE c.tenant_id = $1 AND t.tenant_id = $1 ${dateFilter.replace(/created_at/g, 'c.created_at')}
        GROUP BY t.name
        ORDER BY count DESC
-       LIMIT 10`,
-      params
-    );
+       LIMIT 10`;
+      topTagsParams = params;
+    } else {
+      topTagsQuery = `SELECT t.name, COUNT(*) as count
+       FROM call_tags ct
+       JOIN tags t ON ct.tag_id = t.id
+       JOIN calls c ON ct.call_id = c.id
+       WHERE 1=1 ${dateFilter.replace(/created_at/g, 'c.created_at')}
+       GROUP BY t.name
+       ORDER BY count DESC
+       LIMIT 10`;
+      topTagsParams = params.slice(1); // Enlever le premier param si c'était tenantId
+    }
+    const topTagsResult = await pool.query(topTagsQuery, topTagsParams);
 
     // Appels par jour OU par mois (pour les graphiques, incluant les archivés)
     let callsByDayResult;
@@ -104,15 +125,16 @@ exports.getStatistics = async (req, res) => {
           TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') as date,
           COUNT(*) as count
          FROM calls
-         WHERE tenant_id = $1 ${dateFilter}
+         ${tenantFilter} ${dateFilter}
          GROUP BY DATE_TRUNC('month', created_at)
          ORDER BY date ASC`,
         params
       );
     } else if (period === 'week' && !startDate && !endDate) {
       // Pour la semaine, générer tous les jours même sans appels
-      callsByDayResult = await pool.query(
-        `WITH week_days AS (
+      let weekQuery, weekParams;
+      if (tenantId && tenantId !== 'all') {
+        weekQuery = `WITH week_days AS (
           SELECT generate_series(
             DATE_TRUNC('week', CURRENT_DATE)::date,
             DATE_TRUNC('week', CURRENT_DATE)::date + INTERVAL '6 days',
@@ -125,15 +147,32 @@ exports.getStatistics = async (req, res) => {
         FROM week_days wd
         LEFT JOIN calls c ON DATE(c.created_at) = wd.date AND c.tenant_id = $1
         GROUP BY wd.date
-        ORDER BY wd.date ASC`,
-        params
-      );
+        ORDER BY wd.date ASC`;
+        weekParams = params;
+      } else {
+        weekQuery = `WITH week_days AS (
+          SELECT generate_series(
+            DATE_TRUNC('week', CURRENT_DATE)::date,
+            DATE_TRUNC('week', CURRENT_DATE)::date + INTERVAL '6 days',
+            '1 day'::interval
+          )::date as date
+        )
+        SELECT 
+          wd.date,
+          COALESCE(COUNT(c.id), 0) as count
+        FROM week_days wd
+        LEFT JOIN calls c ON DATE(c.created_at) = wd.date
+        GROUP BY wd.date
+        ORDER BY wd.date ASC`;
+        weekParams = [];
+      }
+      callsByDayResult = await pool.query(weekQuery, weekParams);
     } else {
       // Pour les autres périodes, grouper par jour
       callsByDayResult = await pool.query(
         `SELECT DATE(created_at) as date, COUNT(*) as count
          FROM calls
-         WHERE tenant_id = $1 ${dateFilter}
+         ${tenantFilter} ${dateFilter}
          GROUP BY DATE(created_at)
          ORDER BY date DESC
          LIMIT 30`,
@@ -147,7 +186,7 @@ exports.getStatistics = async (req, res) => {
         COUNT(CASE WHEN EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) < 14 THEN 1 END) as morning,
         COUNT(CASE WHEN EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) >= 14 THEN 1 END) as afternoon
        FROM calls
-       WHERE tenant_id = $1 ${dateFilter}`,
+       ${tenantFilter} ${dateFilter}`,
       params
     );
 
@@ -158,8 +197,9 @@ exports.getStatistics = async (req, res) => {
     
     if (period === 'day' && !startDate && !endDate) {
       // Aujourd'hui - afficher de la première heure avec appels jusqu'à l'heure actuelle (en heure locale)
-      callsByHourResult = await pool.query(
-        `WITH hour_range AS (
+      let hourQuery, hourParams;
+      if (tenantId && tenantId !== 'all') {
+        hourQuery = `WITH hour_range AS (
           SELECT 
             COALESCE(MIN(EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE $2))::integer), 
                      EXTRACT(HOUR FROM (NOW() AT TIME ZONE $2))::integer) as min_hour,
@@ -181,13 +221,39 @@ exports.getStatistics = async (req, res) => {
           AND c.tenant_id = $1 
           AND DATE(c.created_at AT TIME ZONE 'UTC' AT TIME ZONE $2) = CURRENT_DATE
         GROUP BY h.hour
-        ORDER BY h.hour`,
-        [tenantId, timezone]
-      );
+        ORDER BY h.hour`;
+        hourParams = [tenantId, timezone];
+      } else {
+        hourQuery = `WITH hour_range AS (
+          SELECT 
+            COALESCE(MIN(EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE $1))::integer), 
+                     EXTRACT(HOUR FROM (NOW() AT TIME ZONE $1))::integer) as min_hour,
+            EXTRACT(HOUR FROM (NOW() AT TIME ZONE $1))::integer as max_hour
+          FROM calls
+          WHERE DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE $1) = CURRENT_DATE
+        ),
+        hours AS (
+          SELECT generate_series(
+            (SELECT min_hour FROM hour_range),
+            (SELECT max_hour FROM hour_range)
+          ) as hour
+        )
+        SELECT 
+          h.hour,
+          COALESCE(COUNT(c.id), 0) as count
+        FROM hours h
+        LEFT JOIN calls c ON EXTRACT(HOUR FROM (c.created_at AT TIME ZONE 'UTC' AT TIME ZONE $1)) = h.hour 
+          AND DATE(c.created_at AT TIME ZONE 'UTC' AT TIME ZONE $1) = CURRENT_DATE
+        GROUP BY h.hour
+        ORDER BY h.hour`;
+        hourParams = [timezone];
+      }
+      callsByHourResult = await pool.query(hourQuery, hourParams);
     } else if (startDate && endDate && startDate === endDate) {
       // Un jour spécifique (comme Hier) - afficher de la première à la dernière heure avec appels (en heure locale)
-      callsByHourResult = await pool.query(
-        `WITH hour_range AS (
+      let dayHourQuery, dayHourParams;
+      if (tenantId && tenantId !== 'all') {
+        dayHourQuery = `WITH hour_range AS (
           SELECT 
             COALESCE(MIN(EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE $2))::integer), 0) as min_hour,
             COALESCE(MAX(EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE $2))::integer), 23) as max_hour
@@ -208,9 +274,33 @@ exports.getStatistics = async (req, res) => {
           AND c.tenant_id = $1 
           AND DATE(c.created_at AT TIME ZONE 'UTC' AT TIME ZONE $2) = $3::date
         GROUP BY h.hour
-        ORDER BY h.hour`,
-        [tenantId, timezone, startDate]
-      );
+        ORDER BY h.hour`;
+        dayHourParams = [tenantId, timezone, startDate];
+      } else {
+        dayHourQuery = `WITH hour_range AS (
+          SELECT 
+            COALESCE(MIN(EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE $1))::integer), 0) as min_hour,
+            COALESCE(MAX(EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE $1))::integer), 23) as max_hour
+          FROM calls
+          WHERE DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE $1) = $2::date
+        ),
+        hours AS (
+          SELECT generate_series(
+            (SELECT min_hour FROM hour_range),
+            (SELECT max_hour FROM hour_range)
+          ) as hour
+        )
+        SELECT 
+          h.hour,
+          COALESCE(COUNT(c.id), 0) as count
+        FROM hours h
+        LEFT JOIN calls c ON EXTRACT(HOUR FROM (c.created_at AT TIME ZONE 'UTC' AT TIME ZONE $1)) = h.hour 
+          AND DATE(c.created_at AT TIME ZONE 'UTC' AT TIME ZONE $1) = $2::date
+        GROUP BY h.hour
+        ORDER BY h.hour`;
+        dayHourParams = [timezone, startDate];
+      }
+      callsByHourResult = await pool.query(dayHourQuery, dayHourParams);
     }
 
     res.json({
