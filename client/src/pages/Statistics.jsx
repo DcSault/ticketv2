@@ -142,7 +142,16 @@ function Statistics() {
 
   // Calculer l'heure la plus active
   const getMostActiveTime = () => {
-    return '10:00';
+    if (!stats?.callsByHour || stats.callsByHour.length === 0) {
+      return '-';
+    }
+    
+    // Trouver l'heure avec le plus d'appels
+    const mostActive = stats.callsByHour.reduce((max, current) => {
+      return (current.count > max.count) ? current : max;
+    }, stats.callsByHour[0]);
+    
+    return `${mostActive.hour}:00`;
   };
 
   if (loading && !stats) {
@@ -466,7 +475,11 @@ function Statistics() {
               <div className="card bg-white border-l-4 border-purple-500">
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Heure la plus active</h3>
                 <p className="text-4xl font-bold text-purple-600">{mostActiveTime}</p>
-                <p className="text-xs text-gray-500 mt-1">Basée sur la moyenne d'aujourd'hui</p>
+                {stats.callsByHour && stats.callsByHour.length > 0 && mostActiveTime !== '-' && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {stats.callsByHour.find(h => `${h.hour}:00` === mostActiveTime)?.count || 0} appel(s)
+                  </p>
+                )}
               </div>
             </div>
 
