@@ -108,7 +108,7 @@ function OfflineBanner() {
       )}
 
       {/* Banneau serveur indisponible (mais connexion internet OK) */}
-      {showBanner && isOnline && !serverStatus && (
+      {isOnline && !serverStatus && (
         <div className="fixed top-0 left-0 right-0 z-50 animate-slide-down">
           <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-3 shadow-lg">
             <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -127,10 +127,10 @@ function OfflineBanner() {
                   />
                 </svg>
                 <div>
-                  <p className="font-semibold">Le serveur est indisponible</p>
+                  <p className="font-semibold">⚠️ Le serveur est indisponible</p>
                   <p className="text-sm opacity-90">
                     {connectionAttempts > 0 && `Tentatives : ${connectionAttempts} • `}
-                    Pages en cache accessibles.
+                    Pages en cache accessibles • Tentatives automatiques en cours...
                   </p>
                 </div>
               </div>

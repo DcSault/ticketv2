@@ -160,6 +160,11 @@ function AppRouter() {
         }
       />
       
+      {/* Routes d'erreur publiques (pas de protection) */}
+      <Route path="/offline" element={<ErrorOffline />} />
+      <Route path="/error-404" element={<Error404 />} />
+      <Route path="/error-500" element={<Error500 />} />
+      
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </>
