@@ -11,7 +11,7 @@ exports.getCallers = async (req, res) => {
         c.name,
         COUNT(calls.id) as usage_count
        FROM callers c
-       LEFT JOIN calls ON calls.caller_id = c.id AND calls.tenant_id = c.tenant_id
+       LEFT JOIN calls ON calls.caller_id = c.id
        WHERE c.tenant_id = $1
        GROUP BY c.id, c.name
        ORDER BY c.name ASC`,
@@ -36,7 +36,7 @@ exports.getReasons = async (req, res) => {
         r.name,
         COUNT(calls.id) as usage_count
        FROM reasons r
-       LEFT JOIN calls ON calls.reason_id = r.id AND calls.tenant_id = r.tenant_id
+       LEFT JOIN calls ON calls.reason_id = r.id
        WHERE r.tenant_id = $1
        GROUP BY r.id, r.name
        ORDER BY r.name ASC`,
@@ -62,7 +62,7 @@ exports.getTags = async (req, res) => {
         COUNT(ct.call_id) as usage_count
        FROM tags t
        LEFT JOIN call_tags ct ON ct.tag_id = t.id
-       LEFT JOIN calls c ON ct.call_id = c.id AND c.tenant_id = t.tenant_id
+       LEFT JOIN calls c ON ct.call_id = c.id
        WHERE t.tenant_id = $1
        GROUP BY t.id, t.name
        ORDER BY t.name ASC`,
