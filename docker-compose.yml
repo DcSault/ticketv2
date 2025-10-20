@@ -167,8 +167,8 @@ services:
         echo "   ⚡ Compilation en cours (1-2 min)..."
         echo ""
         
-        # Utiliser npx pour s assurer que vite est trouvé
-        npx vite build 2>&1 | while IFS= read -r line; do
+        # Utiliser npm run build au lieu de npx
+        npm run build 2>&1 | while IFS= read -r line; do
           case "$$line" in
             *"vite"*) echo "   ⚡ $$line" ;;
             *"building"*) echo "   🔨 $$line" ;;
