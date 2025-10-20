@@ -182,7 +182,7 @@ services:
           else
             echo "   ⚠️  Vite manquant - Liste des packages installés:"
             ls node_modules | head -20
-            show_error "Vite n'a pas été installé"
+            show_error "Vite na pas ete installe"
           fi
         else
           show_error "Échec installation dépendances client"
@@ -219,7 +219,7 @@ services:
           echo "   📊 $$FILES fichiers générés ($$SIZE)"
           show_success "Frontend prêt"
         else
-          show_error "Le dossier dist n a pas été créé correctement"
+          show_error "Le dossier dist na pas ete cree correctement"
         fi
         
         # Étape 6: Configuration de la base de données
