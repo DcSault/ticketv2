@@ -141,16 +141,39 @@ function Statistics() {
 
   // Calculer l'heure la plus active
   const getMostActiveTime = () => {
-    if (!stats?.callsByHour || stats.callsByHour.length === 0) {
-      return '-';
+    // Priorité 1 : Utiliser les données détaillées par heure si disponibles (Aujourd'hui/Hier)
+    if (stats?.callsByHour && stats.callsByHour.length > 0) {
+      const mostActive = stats.callsByHour.reduce((max, current) => {
+        return (current.count > max.count) ? current : max;
+      }, stats.callsByHour[0]);
+      
+      return `${mostActive.hour}:00`;
     }
     
-    // Trouver l'heure avec le plus d'appels
-    const mostActive = stats.callsByHour.reduce((max, current) => {
-      return (current.count > max.count) ? current : max;
-    }, stats.callsByHour[0]);
+    // Priorité 2 : Utiliser l'heure la plus active calculée par le backend (toutes périodes)
+    if (stats?.mostActiveHour) {
+      return `${stats.mostActiveHour.hour}:00`;
+    }
     
-    return `${mostActive.hour}:00`;
+    return '-';
+  };
+
+  const getMostActiveCount = () => {
+    // Priorité 1 : Utiliser les données détaillées par heure si disponibles
+    if (stats?.callsByHour && stats.callsByHour.length > 0) {
+      const mostActive = stats.callsByHour.reduce((max, current) => {
+        return (current.count > max.count) ? current : max;
+      }, stats.callsByHour[0]);
+      
+      return mostActive.count;
+    }
+    
+    // Priorité 2 : Utiliser le count de l'heure la plus active
+    if (stats?.mostActiveHour) {
+      return stats.mostActiveHour.count;
+    }
+    
+    return 0;
   };
 
   if (loading && !stats) {
@@ -163,7 +186,8 @@ function Statistics() {
 
   const timeRatio = stats ? calculateTimeRatio() : { morning: 0, afternoon: 0, morningPercent: 0, afternoonPercent: 0 };
   const dailyAverage = stats ? calculateDailyAverage() : 0;
-  const mostActiveTime = stats ? getMostActiveTime() : '10:00';
+  const mostActiveTime = stats ? getMostActiveTime() : '-';
+  const mostActiveCount = stats ? getMostActiveCount() : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -447,7 +471,7 @@ function Statistics() {
 
         {stats && (
           <>
-            {/* Résumé avec 4 cartes */}
+            {/* Résumé avec 4 cartes (toujours) */}
             <div className="grid md:grid-cols-4 gap-6 mb-8">
               <div className="card bg-white border-l-4 border-blue-500 animate-slide-in-left">
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Total des appels</h3>
@@ -477,9 +501,9 @@ function Statistics() {
               <div className="card bg-white border-l-4 border-purple-500 animate-slide-in-right">
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Heure la plus active</h3>
                 <p className="text-4xl font-bold text-purple-600">{mostActiveTime}</p>
-                {stats.callsByHour && stats.callsByHour.length > 0 && mostActiveTime !== '-' && (
+                {mostActiveTime !== '-' && mostActiveCount > 0 && (
                   <p className="text-xs text-gray-500 mt-1">
-                    {stats.callsByHour.find(h => `${h.hour}:00` === mostActiveTime)?.count || 0} appel(s)
+                    {mostActiveCount} appel(s)
                   </p>
                 )}
               </div>

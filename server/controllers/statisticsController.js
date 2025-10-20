@@ -305,6 +305,34 @@ exports.getStatistics = async (req, res) => {
       callsByHourResult = await pool.query(dayHourQuery, dayHourParams);
     }
 
+    // Calculer l'heure la plus active pour TOUTES les périodes
+    let mostActiveHourResult = null;
+    if (tenantId && tenantId !== 'all') {
+      mostActiveHourResult = await pool.query(
+        `SELECT 
+          EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris'))::integer as hour,
+          COUNT(*) as count
+         FROM calls
+         ${tenantFilter} ${dateFilter}
+         GROUP BY EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris'))
+         ORDER BY count DESC
+         LIMIT 1`,
+        params
+      );
+    } else {
+      mostActiveHourResult = await pool.query(
+        `SELECT 
+          EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris'))::integer as hour,
+          COUNT(*) as count
+         FROM calls
+         ${tenantFilter} ${dateFilter}
+         GROUP BY EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris'))
+         ORDER BY count DESC
+         LIMIT 1`,
+        params
+      );
+    }
+
     res.json({
       summary: {
         total: parseInt(totalResult.rows[0].total),
@@ -319,7 +347,10 @@ exports.getStatistics = async (req, res) => {
       topReasons: topReasonsResult.rows,
       topTags: topTagsResult.rows,
       callsByDay: callsByDayResult.rows,
-      callsByHour: callsByHourResult ? callsByHourResult.rows : null
+      callsByHour: callsByHourResult ? callsByHourResult.rows : null,
+      mostActiveHour: mostActiveHourResult && mostActiveHourResult.rows.length > 0 
+        ? { hour: parseInt(mostActiveHourResult.rows[0].hour), count: parseInt(mostActiveHourResult.rows[0].count) }
+        : null
     });
   } catch (error) {
     console.error('Get statistics error:', error);
