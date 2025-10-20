@@ -7,253 +7,27 @@ services:
     working_dir: /app
     command: |
       sh -c '
-        set -e
-        
-        # Fonction pour afficher une barre de progression
-        show_progress() {
-          echo ""
-          echo "╔═══════════════════════════════════════════════╗"
-          echo "║  🚀 $$1"
-          echo "╚═══════════════════════════════════════════════╝"
-        }
-        
-        show_step() {
-          echo "   ➜ $$1..."
-        }
-        
-        show_success() {
-          echo "   ✅ $$1"
-        }
-        
-        show_error() {
-          echo "   ❌ ERREUR: $$1"
-          exit 1
-        }
-        
-        # Barre de chargement animée
-        show_loading() {
-          echo -n "   "
-          for i in 1 2 3 4 5 6 7 8 9 10; do
-            echo -n "█"
-            sleep 0.1
-          done
-          echo " 100%"
-        }
-        
-        # Étape 1: Installation de Git
-        show_progress "ÉTAPE 1/6: Installation de Git                "
-        show_step "Installation de git"
-        show_loading
-        apk add --no-cache git > /dev/null 2>&1 || show_error "Échec installation Git"
-        show_success "Git installé avec succès"
-        
-        # Étape 2: Clonage du repository
-        show_progress "ÉTAPE 2/6: Clonage du repository              "
-        
-        # Vérifier si le code existe déjà
-        if [ -d ".git" ] && [ -f "package.json" ]; then
-          echo "   🔍 Repository déjà présent"
-          show_step "Mise à jour du code source"
-          git fetch origin main 2>&1 | head -5
-          LOCAL=$$(git rev-parse HEAD)
-          REMOTE=$$(git rev-parse origin/main)
-          if [ "$$LOCAL" != "$$REMOTE" ]; then
-            echo "   🔄 Nouvelles modifications détectées"
-            git pull origin main 2>&1 || show_error "Échec de la mise à jour"
-            show_success "Code source mis à jour"
-          else
-            echo "   ⚡ Code source déjà à jour - Clone ignoré"
-            show_success "Repository à jour"
-          fi
-        else
-          show_step "Nettoyage du dossier temporaire"
-          rm -rf /tmp/ticketv2
-          show_step "Clonage depuis GitHub"
-          echo "   📦 Téléchargement du code source..."
-          git clone --progress https://github.com/DcSault/ticketv2.git /tmp/ticketv2 2>&1 || show_error "Échec du clonage"
-          show_step "Copie des fichiers"
-          cp -R /tmp/ticketv2/* /app/ || show_error "Échec de la copie"
-          cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || true
-          rm -rf /tmp/ticketv2
-          show_success "Repository cloné avec succès"
-        fi
-        
-        # Étape 3: Installation des dépendances serveur
-        show_progress "ÉTAPE 3/6: Installation dépendances serveur   "
-        
-        # Vérifier si node_modules existe et est à jour
-        if [ -d "node_modules" ] && [ -f "package-lock.json" ]; then
-          echo "   🔍 Vérification des dépendances existantes..."
-          if [ "package-lock.json" -nt "node_modules" ]; then
-            show_step "Mise à jour nécessaire des packages npm"
-            echo "   📦 Installation en cours (peut prendre 2-3 min)..."
-            echo ""
-            npm install 2>&1 | while IFS= read -r line; do
-              case "$$line" in
-                *"added"*) echo "   ✨ $$line" ;;
-                *"removed"*) echo "   🗑️  $$line" ;;
-                *"changed"*) echo "   🔄 $$line" ;;
-                *"up to date"*) echo "   ✅ $$line" ;;
-                *"packages"*) echo "   📊 $$line" ;;
-              esac
-            done
-            echo ""
-          else
-            echo "   ⚡ Dépendances déjà à jour - Installation ignorée"
-          fi
-        else
-          show_step "Installation des packages npm"
-          echo "   📦 Installation en cours (peut prendre 2-3 min)..."
-          echo ""
-          npm install 2>&1 | while IFS= read -r line; do
-            case "$$line" in
-              *"added"*) echo "   ✨ $$line" ;;
-              *"removed"*) echo "   🗑️  $$line" ;;
-              *"changed"*) echo "   🔄 $$line" ;;
-              *"up to date"*) echo "   ✅ $$line" ;;
-              *"packages"*) echo "   📊 $$line" ;;
-            esac
-          done
-          echo ""
-        fi
-        
-        if [ -d "node_modules" ]; then
-          PACKAGES=$$(find node_modules -maxdepth 1 -type d | wc -l)
-          echo "   📦 $$PACKAGES packages installés"
-          show_success "Dépendances serveur prêtes"
-        else
-          show_error "Échec installation dépendances serveur"
-        fi
-        
-        # Étape 4: Installation des dépendances client
-        show_progress "ÉTAPE 4/6: Installation dépendances client    "
-        
-        cd client
-        
-        # Vérifier si node_modules existe et est à jour
-        if [ -d "node_modules" ] && [ -f "package-lock.json" ] && [ -f "node_modules/vite/package.json" ]; then
-          echo "   🔍 Vérification des dépendances existantes..."
-          if [ "package-lock.json" -nt "node_modules" ]; then
-            echo "   🗑️  Mise à jour nécessaire..."
-            rm -rf node_modules package-lock.json
-            show_step "Installation des packages client"
-            echo "   📦 Installation en cours (peut prendre 2-3 min)..."
-            echo ""
-            npm install 2>&1 | while IFS= read -r line; do
-              case "$$line" in
-                *"added"*) echo "   ✨ $$line" ;;
-                *"removed"*) echo "   🗑️  $$line" ;;
-                *"changed"*) echo "   🔄 $$line" ;;
-                *"up to date"*) echo "   ✅ $$line" ;;
-                *"packages"*) echo "   📊 $$line" ;;
-              esac
-            done
-            echo ""
-          else
-            echo "   ⚡ Dépendances déjà à jour - Installation ignorée"
-          fi
-        else
-          echo "   🗑️  Nettoyage complet (première installation ou cache corrompu)..."
-          rm -rf node_modules package-lock.json .vite-temp
-          show_step "Installation des packages client"
-          echo "   📦 Installation en cours (peut prendre 2-3 min)..."
-          echo ""
-          npm install 2>&1 | while IFS= read -r line; do
-            case "$$line" in
-              *"added"*) echo "   ✨ $$line" ;;
-              *"removed"*) echo "   🗑️  $$line" ;;
-              *"changed"*) echo "   🔄 $$line" ;;
-              *"up to date"*) echo "   ✅ $$line" ;;
-              *"packages"*) echo "   📊 $$line" ;;
-            esac
-          done
-          echo ""
-        fi
-        
-        # Vérification détaillée
-        if [ -d "node_modules" ]; then
-          PACKAGES=$$(find node_modules -maxdepth 1 -type d | wc -l)
-          echo "   📦 $$PACKAGES packages installés"
-          
-          # Vérifier si vite existe (fichier package.json dans le dossier vite)
-          if [ -f "node_modules/vite/package.json" ]; then
-            echo "   ✅ Vite installé correctement"
-            show_success "Dépendances client prêtes"
-          else
-            echo "   ⚠️  Vite manquant - Liste des packages installés:"
-            ls node_modules | head -20
-            show_error "Vite na pas ete installe"
-          fi
-        else
-          show_error "Échec installation dépendances client"
-        fi
-        cd ..
-        
-        # Étape 5: Build du frontend
-        show_progress "ÉTAPE 5/6: Build du frontend production       "
-        
-        cd client
-        show_step "Compilation Vite avec npx"
-        echo "   ⚡ Compilation en cours (1-2 min)..."
-        echo ""
-        
-        # Utiliser npm run build au lieu de npx
-        npm run build 2>&1 | while IFS= read -r line; do
-          case "$$line" in
-            *"vite"*) echo "   ⚡ $$line" ;;
-            *"building"*) echo "   🔨 $$line" ;;
-            *"built"*) echo "   ✅ $$line" ;;
-            *"kB"*) echo "   📦 $$line" ;;
-            *"✓"*) echo "   ✅ $$line" ;;
-            *"transforming"*) echo "   � $$line" ;;
-            *"computing"*) echo "   � $$line" ;;
-          esac
-        done || show_error "Échec du build frontend"
-        echo ""
-        cd ..
-        
-        show_step "Vérification du build"
-        if [ -d "/app/client/dist" ] && [ -f "/app/client/dist/index.html" ]; then
-          FILES=$$(find /app/client/dist -type f | wc -l)
-          SIZE=$$(du -sh /app/client/dist 2>/dev/null | cut -f1)
-          echo "   📊 $$FILES fichiers générés ($$SIZE)"
-          show_success "Frontend prêt"
-        else
-          show_error "Le dossier dist na pas ete cree correctement"
-        fi
-        
-        # Étape 6: Configuration de la base de données
-        show_progress "ÉTAPE 6/6: Démarrage de l application        "
-        show_step "Attente de la base de données PostgreSQL"
-        for i in 1 2 3 4 5; do
-          echo -n "   🔄 Connexion à PostgreSQL... [$$i/5] "
-          for j in 1 2 3; do
-            echo -n "."
-            sleep 0.3
-          done
-          echo " ✓"
-        done
-        show_success "Base de données prête"
-        
-        show_step "Initialisation du schéma de base de données"
-        node server/scripts/setup-db.js 2>&1 | while IFS= read -r line; do
-          echo "   🗄️  $$line"
-        done || show_error "Échec setup base de données"
-        show_success "Base de données initialisée"
-        
-        echo ""
-        echo "╔═══════════════════════════════════════════════╗"
-        echo "║  🎉 APPLICATION PRÊTE                         ║"
-        echo "╠═══════════════════════════════════════════════╣"
-        echo "║  📍 URL: http://localhost:7979                ║"
-        echo "║  👤 Admin: admin / admin123                   ║"
-        echo "║  🗄️  Database: PostgreSQL (ticketv2)          ║"
-        echo "║  ⚡ Environment: Production                   ║"
-        echo "╚═══════════════════════════════════════════════╝"
-        echo ""
-        echo "   🚀 Démarrage du serveur Node.js..."
-        echo ""
-        
+        echo "� Installing git..." &&
+        apk add --no-cache git &&
+        echo "📥 Cloning repository..." &&
+        rm -rf /tmp/ticketv2 &&
+        git clone https://github.com/DcSault/ticketv2.git /tmp/ticketv2 &&
+        echo "📦 Copying files..." &&
+        cp -R /tmp/ticketv2/* /app/ &&
+        rm -rf /tmp/ticketv2 &&
+        echo "📦 Installing dependencies..." &&
+        npm install --production=false &&
+        echo "📦 Installing client dependencies..." &&
+        cd client && npm install --production=false && cd .. &&
+        echo "🏗️  Building frontend for production..." &&
+        cd client && npm run build && cd .. &&
+        echo "✅ Verifying build..." &&
+        ls -la /app/client/dist/ &&
+        echo "🗄️  Waiting for database..." &&
+        sleep 5 &&
+        echo "🔧 Setting up database..." &&
+        node server/scripts/setup-db.js &&
+        echo "🚀 Starting application..." &&
         npm start
       '
     ports:
@@ -274,9 +48,7 @@ services:
       
       # Server
       - PORT=3000
-      # NOTE: NODE_ENV=production désactivé car il empêche l'installation des devDependencies (vite, etc.)
-      # qui sont nécessaires pour le build du frontend
-      # - NODE_ENV=production
+      - NODE_ENV=production
       
       # Default admin
       - DEFAULT_ADMIN_USERNAME=admin
@@ -285,7 +57,7 @@ services:
       - ticketv2_data:/app
     networks:
       - ticketv2-network
-    restart: "no"
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
