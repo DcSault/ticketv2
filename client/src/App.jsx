@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { authService } from './services/api';
 import { registerServiceWorker } from './services/serviceWorkerManager';
+import healthCheckService from './services/healthCheckService';
 import OfflineBanner from './components/OfflineBanner';
 
 // Pages
@@ -59,6 +60,30 @@ function AppRouter() {
   useEffect(() => {
     // Enregistrer le Service Worker au montage du composant
     registerServiceWorker();
+
+    // Initialiser le Health Check Worker
+    healthCheckService.initialize()
+      .then(() => {
+        // Démarrer les vérifications de santé toutes les 30 secondes
+        healthCheckService.start(30000);
+
+        // Écouter les changements de statut
+        healthCheckService.on('healthStatusChanged', (data) => {
+          console.log('Server health status:', data.status ? 'Healthy' : 'Unhealthy');
+        });
+
+        healthCheckService.on('healthCheckError', (data) => {
+          console.warn('Server health check error:', data.error);
+        });
+      })
+      .catch((error) => {
+        console.warn('Health Check Service not available:', error.message);
+      });
+
+    // Nettoyer le worker lors du démontage
+    return () => {
+      healthCheckService.terminate();
+    };
   }, []);
 
   return (
