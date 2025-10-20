@@ -8,23 +8,48 @@ services:
     command: |
       sh -c '
         set -e
+        
+        # Fonction pour logger les erreurs
+        error_exit() {
+          echo "❌ ERROR: $1" >&2
+          exit 1
+        }
+        
         echo "⚙️  Initializing..."
-        apk add --no-cache git
-        rm -rf /tmp/ticketv2
+        
+        echo "📦 Installing git..."
+        apk add --no-cache git || error_exit "Failed to install git"
+        
+        echo "🧹 Cleaning previous installation..."
+        rm -rf /tmp/ticketv2 || error_exit "Failed to clean temp directory"
+        
         echo "📥 Downloading source code..."
-        git clone -q https://github.com/DcSault/ticketv2.git /tmp/ticketv2
-        cp -R /tmp/ticketv2/* /app/
-        cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || true
-        rm -rf /tmp/ticketv2
-        echo "📦 Installing dependencies..."
-        npm install --omit=dev
-        cd client && npm install && cd ..
-        echo "🔨 Building frontend..."
-        cd client && npm run build && cd ..
+        git clone -q https://github.com/DcSault/ticketv2.git /tmp/ticketv2 || error_exit "Failed to clone repository"
+        
+        echo "📋 Copying files to /app..."
+        cp -R /tmp/ticketv2/* /app/ || error_exit "Failed to copy files"
+        cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || echo "⚠️  Warning: .env.example not found"
+        
+        echo "🧹 Cleaning temp files..."
+        rm -rf /tmp/ticketv2 || echo "⚠️  Warning: Failed to clean temp"
+        
+        echo "📦 Installing server dependencies (this may take a while)..."
+        npm install --omit=dev 2>&1 | tail -n 20 || error_exit "Failed to install server dependencies"
+        
+        echo "📦 Installing client dependencies (this may take a while)..."
+        (cd client && npm install 2>&1 | tail -n 20) || error_exit "Failed to install client dependencies"
+        
+        echo "🔨 Building frontend for production..."
+        (cd client && npm run build 2>&1 | tail -n 10) || error_exit "Failed to build frontend"
+        
+        echo "✅ Build completed successfully"
+        
         echo "⏳ Waiting for database..."
         sleep 5
+        
         echo "🗄️  Setting up database..."
-        node server/scripts/setup-db.js
+        node server/scripts/setup-db.js || error_exit "Failed to setup database"
+        
         echo "🚀 Starting application..."
         npm start
       '
