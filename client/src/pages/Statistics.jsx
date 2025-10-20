@@ -117,13 +117,13 @@ function Statistics() {
 
   // Calculer le ratio Matin/Après-midi
   const calculateTimeRatio = () => {
-    if (!stats?.callsByDay || stats.callsByDay.length === 0) {
+    if (!stats?.timeRatio) {
       return { morning: 0, afternoon: 0, morningPercent: 0, afternoonPercent: 0 };
     }
     
-    const total = stats.summary.total;
-    const morning = Math.round(total * 0.55);
-    const afternoon = total - morning;
+    const morning = stats.timeRatio.morning;
+    const afternoon = stats.timeRatio.afternoon;
+    const total = morning + afternoon;
     
     return { 
       morning, 

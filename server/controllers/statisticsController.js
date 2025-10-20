@@ -122,6 +122,16 @@ exports.getStatistics = async (req, res) => {
       );
     }
 
+    // Ratio matin/après-midi (matin = 0h-13h59, après-midi = 14h-23h59)
+    const timeRatioResult = await pool.query(
+      `SELECT 
+        COUNT(CASE WHEN EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) < 14 THEN 1 END) as morning,
+        COUNT(CASE WHEN EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) >= 14 THEN 1 END) as afternoon
+       FROM calls
+       WHERE tenant_id = $1 ${dateFilter}`,
+      params
+    );
+
     // Appels par heure (pour aujourd'hui ou pour un jour spécifique)
     // Note: Les timestamps sont en UTC, conversion automatique en Europe/Paris (gère été/hiver automatiquement)
     let callsByHourResult = null;
@@ -189,6 +199,10 @@ exports.getStatistics = async (req, res) => {
         total: parseInt(totalResult.rows[0].total),
         blocking: parseInt(blockingResult.rows[0].total),
         glpi: parseInt(glpiResult.rows[0].total)
+      },
+      timeRatio: {
+        morning: parseInt(timeRatioResult.rows[0].morning),
+        afternoon: parseInt(timeRatioResult.rows[0].afternoon)
       },
       topCallers: topCallersResult.rows,
       topReasons: topReasonsResult.rows,
