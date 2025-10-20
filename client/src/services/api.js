@@ -23,24 +23,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Vérifier si c'est une erreur hors ligne
-    if (!navigator.onLine) {
-      console.warn('Request failed: Application is offline');
-      error.isOffline = true;
-    }
-
-    // Gérer les erreurs HTTP spécifiques
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
-    } else if (error.response?.status === 404) {
-      error.isNotFound = true;
-    } else if (error.response?.status === 500) {
-      error.isServerError = true;
-      console.error('Server error:', error.response.data);
     }
-
     return Promise.reject(error);
   }
 );
