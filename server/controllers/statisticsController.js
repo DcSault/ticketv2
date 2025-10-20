@@ -109,6 +109,25 @@ exports.getStatistics = async (req, res) => {
          ORDER BY date ASC`,
         params
       );
+    } else if (period === 'week' && !startDate && !endDate) {
+      // Pour la semaine, générer tous les jours même sans appels
+      callsByDayResult = await pool.query(
+        `WITH week_days AS (
+          SELECT generate_series(
+            DATE_TRUNC('week', CURRENT_DATE)::date,
+            DATE_TRUNC('week', CURRENT_DATE)::date + INTERVAL '6 days',
+            '1 day'::interval
+          )::date as date
+        )
+        SELECT 
+          wd.date,
+          COALESCE(COUNT(c.id), 0) as count
+        FROM week_days wd
+        LEFT JOIN calls c ON DATE(c.created_at) = wd.date AND c.tenant_id = $1
+        GROUP BY wd.date
+        ORDER BY wd.date ASC`,
+        params
+      );
     } else {
       // Pour les autres périodes, grouper par jour
       callsByDayResult = await pool.query(
