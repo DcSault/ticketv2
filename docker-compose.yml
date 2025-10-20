@@ -129,30 +129,51 @@ services:
         show_progress "ÉTAPE 4/6: Installation dépendances client    "
         
         cd client
-        # Forcer la suppression complète pour éviter les problèmes de cache
-        echo "   🗑️  Nettoyage complet..."
-        rm -rf node_modules package-lock.json .vite-temp
         
-        show_step "Installation des packages client (installation propre)"
-        echo "   📦 Installation en cours (peut prendre 2-3 min)..."
-        echo ""
-        # Installation avec --force pour éviter les problèmes de cache
-        npm install --force 2>&1 | while IFS= read -r line; do
-          case "$$line" in
-            *"added"*) echo "   ✨ $$line" ;;
-            *"removed"*) echo "   🗑️  $$line" ;;
-            *"changed"*) echo "   🔄 $$line" ;;
-            *"up to date"*) echo "   ✅ $$line" ;;
-            *"packages"*) echo "   📊 $$line" ;;
-          esac
-        done
-        echo ""
+        # Vérifier si node_modules existe et est à jour
+        if [ -d "node_modules" ] && [ -f "package-lock.json" ] && [ -d "node_modules/vite" ]; then
+          echo "   🔍 Vérification des dépendances existantes..."
+          if [ "package-lock.json" -nt "node_modules" ]; then
+            echo "   🗑️  Mise à jour nécessaire..."
+            rm -rf node_modules package-lock.json
+            show_step "Installation des packages client"
+            echo "   📦 Installation en cours (peut prendre 2-3 min)..."
+            echo ""
+            npm install 2>&1 | while IFS= read -r line; do
+              case "$$line" in
+                *"added"*) echo "   ✨ $$line" ;;
+                *"removed"*) echo "   🗑️  $$line" ;;
+                *"changed"*) echo "   🔄 $$line" ;;
+                *"up to date"*) echo "   ✅ $$line" ;;
+                *"packages"*) echo "   📊 $$line" ;;
+              esac
+            done
+            echo ""
+          else
+            echo "   ⚡ Dépendances déjà à jour - Installation ignorée"
+          fi
+        else
+          echo "   🗑️  Nettoyage complet (première installation ou cache corrompu)..."
+          rm -rf node_modules package-lock.json .vite-temp
+          show_step "Installation des packages client (installation propre)"
+          echo "   📦 Installation en cours (peut prendre 2-3 min)..."
+          echo ""
+          npm install 2>&1 | while IFS= read -r line; do
+            case "$$line" in
+              *"added"*) echo "   ✨ $$line" ;;
+              *"removed"*) echo "   🗑️  $$line" ;;
+              *"changed"*) echo "   🔄 $$line" ;;
+              *"up to date"*) echo "   ✅ $$line" ;;
+              *"packages"*) echo "   📊 $$line" ;;
+            esac
+          done
+          echo ""
+        fi
         
-        # Vérifier l'installation
         if [ -d "node_modules" ] && [ -d "node_modules/vite" ]; then
           PACKAGES=$$(find node_modules -maxdepth 1 -type d | wc -l)
           echo "   📦 $$PACKAGES packages installés"
-          echo "   ✅ Vite installé: $$(ls -la node_modules/vite/package.json | wc -l) fichier trouvé"
+          echo "   ✅ Vite installé correctement"
           show_success "Dépendances client prêtes"
         else
           show_error "Échec installation dépendances client"
