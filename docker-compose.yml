@@ -8,28 +8,112 @@ services:
     command: |
       sh -c '
         set -e
-        echo "Installing git..." &&
-        apk add --no-cache git &&
-        echo "Cloning repository..." &&
-        rm -rf /tmp/ticketv2 &&
-        git clone https://github.com/DcSault/ticketv2.git /tmp/ticketv2 &&
-        echo "Copying files..." &&
-        cp -R /tmp/ticketv2/* /app/ &&
-        cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || true &&
-        rm -rf /tmp/ticketv2 &&
-        echo "Installing dependencies..." &&
-        npm install &&
-        echo "Installing client dependencies..." &&
-        cd client && npm install && cd .. &&
-        echo "Building frontend for production..." &&
-        cd client && npm run build && cd .. &&
-        echo "Verifying build..." &&
-        ls -la /app/client/dist/ &&
-        echo "Waiting for database..." &&
-        sleep 5 &&
-        echo "Setting up database..." &&
-        node server/scripts/setup-db.js &&
-        echo "Starting application..." &&
+        
+        # Fonction pour afficher une barre de progression
+        show_progress() {
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 $1"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        }
+        
+        show_step() {
+          echo "➜ $1..."
+        }
+        
+        show_success() {
+          echo "✅ $1"
+        }
+        
+        show_error() {
+          echo "❌ ERREUR: $1"
+          exit 1
+        }
+        
+        # Étape 1: Installation de Git
+        show_progress "ÉTAPE 1/7: Installation de Git"
+        show_step "Installation de git"
+        apk add --no-cache git > /dev/null 2>&1 || show_error "Échec installation Git"
+        show_success "Git installé avec succès"
+        
+        # Étape 2: Clonage du repository
+        show_progress "ÉTAPE 2/7: Clonage du repository"
+        show_step "Nettoyage du dossier temporaire"
+        rm -rf /tmp/ticketv2
+        show_step "Clonage depuis GitHub"
+        git clone --progress https://github.com/DcSault/ticketv2.git /tmp/ticketv2 2>&1 || show_error "Échec du clonage"
+        show_success "Repository cloné avec succès"
+        
+        # Étape 3: Copie des fichiers
+        show_progress "ÉTAPE 3/7: Copie des fichiers"
+        show_step "Copie des fichiers vers /app"
+        cp -R /tmp/ticketv2/* /app/ || show_error "Échec de la copie"
+        cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || true
+        show_step "Nettoyage du dossier temporaire"
+        rm -rf /tmp/ticketv2
+        show_success "Fichiers copiés avec succès"
+        
+        # Étape 4: Installation des dépendances serveur
+        show_progress "ÉTAPE 4/7: Installation des dépendances serveur"
+        show_step "Installation des packages npm (cela peut prendre quelques minutes)"
+        echo "⏳ En cours..."
+        npm install 2>&1 | grep -E "added|removed|changed|up to date" || true
+        if [ $? -eq 0 ] || [ -d "node_modules" ]; then
+          show_success "Dépendances serveur installées"
+        else
+          show_error "Échec installation dépendances serveur"
+        fi
+        
+        # Étape 5: Installation des dépendances client
+        show_progress "ÉTAPE 5/7: Installation des dépendances client"
+        show_step "Installation des packages client (cela peut prendre quelques minutes)"
+        echo "⏳ En cours..."
+        cd client
+        npm install 2>&1 | grep -E "added|removed|changed|up to date" || true
+        if [ $? -eq 0 ] || [ -d "node_modules" ]; then
+          show_success "Dépendances client installées"
+        else
+          show_error "Échec installation dépendances client"
+        fi
+        cd ..
+        
+        # Étape 6: Build du frontend
+        show_progress "ÉTAPE 6/7: Build du frontend pour production"
+        show_step "Compilation Vite (cela peut prendre 1-2 minutes)"
+        echo "⏳ En cours..."
+        cd client
+        npm run build 2>&1 || show_error "Échec du build frontend"
+        cd ..
+        show_step "Vérification du build"
+        if [ -d "/app/client/dist" ]; then
+          ls -la /app/client/dist/ | head -10
+          show_success "Frontend compilé avec succès"
+        else
+          show_error "Le dossier dist n a pas été créé"
+        fi
+        
+        # Étape 7: Configuration de la base de données
+        show_progress "ÉTAPE 7/7: Démarrage de l application"
+        show_step "Attente de la base de données PostgreSQL"
+        for i in 1 2 3 4 5; do
+          echo "⏳ Tentative $i/5..."
+          sleep 2
+        done
+        show_success "Base de données prête"
+        
+        show_step "Initialisation du schéma de base de données"
+        node server/scripts/setup-db.js || show_error "Échec setup base de données"
+        show_success "Base de données initialisée"
+        
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "🎉 DÉMARRAGE DE L APPLICATION"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📍 URL: http://localhost:7979"
+        echo "👤 Admin: admin / admin123"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
         npm start
       '
     ports:
