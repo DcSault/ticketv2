@@ -180,11 +180,13 @@ exports.getStatistics = async (req, res) => {
       );
     }
 
-    // Ratio matin/après-midi (matin = 0h-13h59, après-midi = 14h-23h59)
+    // Ratio matin/après-midi (matin = 7h30-12h, après-midi = 13h30-17h30)
     const timeRatioResult = await pool.query(
       `SELECT 
-        COUNT(CASE WHEN EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) < 14 THEN 1 END) as morning,
-        COUNT(CASE WHEN EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) >= 14 THEN 1 END) as afternoon
+        COUNT(CASE WHEN EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) * 60 + EXTRACT(MINUTE FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) >= 450 
+              AND EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) * 60 + EXTRACT(MINUTE FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) < 720 THEN 1 END) as morning,
+        COUNT(CASE WHEN EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) * 60 + EXTRACT(MINUTE FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) >= 810 
+              AND EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) * 60 + EXTRACT(MINUTE FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) < 1050 THEN 1 END) as afternoon
        FROM calls
        ${tenantFilter} ${dateFilter}`,
       params
