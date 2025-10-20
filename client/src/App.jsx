@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { authService } from './services/api';
+import { registerServiceWorker } from './services/serviceWorkerManager';
+import OfflineBanner from './components/OfflineBanner';
 
 // Pages
 import Login from './pages/Login';
@@ -11,6 +13,9 @@ import Admin from './pages/Admin';
 import AdminTenant from './pages/AdminTenant';
 import Archives from './pages/Archives';
 import DataManagement from './pages/DataManagement';
+import Error404 from './pages/Error404';
+import Error500 from './pages/Error500';
+import ErrorOffline from './pages/ErrorOffline';
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -51,8 +56,15 @@ function TenantAdminRoute({ children }) {
 }
 
 function AppRouter() {
+  useEffect(() => {
+    // Enregistrer le Service Worker au montage du composant
+    registerServiceWorker();
+  }, []);
+
   return (
-    <Routes>
+    <>
+      <OfflineBanner />
+      <Routes>
       <Route 
         path="/login" 
         element={
@@ -125,6 +137,7 @@ function AppRouter() {
       
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }
 
