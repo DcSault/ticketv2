@@ -8,17 +8,27 @@ services:
     command: |
       sh -c '
         set -e
-        apk add --no-cache git
-        rm -rf /tmp/ticketv2
-        git clone -q https://github.com/DcSault/ticketv2.git /tmp/ticketv2
-        cp -R /tmp/ticketv2/* /app/
-        cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || true
-        rm -rf /tmp/ticketv2
-        npm install --omit=dev --loglevel=error
-        cd client && npm install --loglevel=error && cd ..
-        cd client && npm run build && cd ..
-        sleep 5
-        node server/scripts/setup-db.js
+        echo "Installing git..." &&
+        apk add --no-cache git > /dev/null 2>&1 &&
+        echo "Cloning repository..." &&
+        rm -rf /tmp/ticketv2 &&
+        git clone -q https://github.com/DcSault/ticketv2.git /tmp/ticketv2 &&
+        echo "Copying files..." &&
+        cp -R /tmp/ticketv2/* /app/ &&
+        cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || true &&
+        rm -rf /tmp/ticketv2 &&
+        echo "Installing dependencies..." &&
+        npm install --omit=dev --silent > /dev/null 2>&1 &&
+        echo "Installing client dependencies..." &&
+        cd client && npm install --silent > /dev/null 2>&1 && cd .. &&
+        echo "Building frontend for production..." &&
+        cd client && npm run build > /dev/null 2>&1 && cd .. &&
+        echo "✓ Build complete" &&
+        echo "Waiting for database..." &&
+        sleep 5 &&
+        echo "Setting up database..." &&
+        node server/scripts/setup-db.js &&
+        echo "Starting application..." &&
         npm start
       '
     ports:
