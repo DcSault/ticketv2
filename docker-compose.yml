@@ -9,16 +9,17 @@ services:
       sh -c '
         set -e
         echo "⚙️  Initializing..."
-        apk add --no-cache git
+        apk add --no-cache --quiet git || apk add --no-cache git
         rm -rf /tmp/ticketv2
         echo "📥 Downloading source code..."
-        git clone -q https://github.com/DcSault/ticketv2.git /tmp/ticketv2
+        git clone -q https://github.com/DcSault/ticketv2.git /tmp/ticketv2 || git clone https://github.com/DcSault/ticketv2.git /tmp/ticketv2
         cp -R /tmp/ticketv2/* /app/
         cp /tmp/ticketv2/.env.example /app/.env 2>/dev/null || true
         rm -rf /tmp/ticketv2
-        echo "📦 Installing dependencies..."
-        npm install --omit=dev
-        cd client && npm install && cd ..
+        echo "📦 Installing server dependencies..."
+        npm install --omit=dev --loglevel=error || npm install --omit=dev
+        echo "📦 Installing client dependencies..."
+        cd client && npm install --loglevel=error && cd .. || (cd client && npm install && cd ..)
         echo "🔨 Building frontend..."
         cd client && npm run build && cd ..
         echo "⏳ Waiting for database..."
