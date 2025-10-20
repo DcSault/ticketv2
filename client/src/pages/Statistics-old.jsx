@@ -95,7 +95,7 @@ function Statistics() {
               onClick={() => navigate('/')}
               className={`text-2xl font-bold ${isDailyView ? 'text-gray-800 hover:text-blue-600' : 'text-white hover:text-blue-400'}`}
             >
-              ←
+              ← CallFixV2
             </button>
             <span className="text-gray-500">|</span>
             <span className={isDailyView ? 'text-gray-600' : 'text-gray-300'}>Statistiques</span>
