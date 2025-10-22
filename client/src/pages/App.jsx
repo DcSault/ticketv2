@@ -82,7 +82,10 @@ function App() {
 
   const loadCalls = async () => {
     try {
-      const params = { limit: 100 };
+      const params = { 
+        limit: 100,
+        archived: 'false' // Ne charger que les appels actifs (non archivés)
+      };
       if (canSelectTenant && selectedTenant && selectedTenant !== 'all') {
         params.tenantId = selectedTenant;
       }
