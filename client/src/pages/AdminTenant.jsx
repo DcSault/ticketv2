@@ -223,13 +223,6 @@ function AdminTenant() {
               📋 Gestion des données
             </button>
             <span className="text-gray-300">|</span>
-            <button
-              onClick={() => navigate('/export-manager')}
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-            >
-              📊 Exports avancés
-            </button>
-            <span className="text-gray-300">|</span>
             <span className="text-sm text-gray-600">
               {user?.fullName || user?.username}
             </span>
@@ -334,6 +327,14 @@ function AdminTenant() {
                   <div className="text-sm text-gray-500">Appelants & Raisons</div>
                 </button>
 
+                <button
+                  onClick={() => navigate('/export-manager')}
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                >
+                  <div className="text-2xl mb-2">📊</div>
+                  <div className="font-semibold">Exports Avancés</div>
+                  <div className="text-sm text-gray-500">Exporter les appels jour par jour</div>
+                </button>
 
                 <button
                   onClick={handleForceArchive}
