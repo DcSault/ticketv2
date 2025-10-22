@@ -504,6 +504,34 @@ exports.importCalls = async (req, res) => {
           continue;
         }
 
+        // Résoudre caller si c'est un ID
+        let callerName = caller;
+        if (typeof caller === 'number' || !isNaN(caller)) {
+          const callerResult = await pool.query(
+            'SELECT name FROM callers WHERE id = $1 AND tenant_id = $2',
+            [caller, tenantId]
+          );
+          if (callerResult.rows.length > 0) {
+            callerName = callerResult.rows[0].name;
+          } else {
+            errors.push(`Appel ignoré : caller_id ${caller} introuvable`);
+            skipped++;
+            continue;
+          }
+        }
+
+        // Résoudre reason si c'est un ID
+        let reasonName = reason || null;
+        if (reason && (typeof reason === 'number' || !isNaN(reason))) {
+          const reasonResult = await pool.query(
+            'SELECT name FROM reasons WHERE id = $1 AND tenant_id = $2',
+            [reason, tenantId]
+          );
+          if (reasonResult.rows.length > 0) {
+            reasonName = reasonResult.rows[0].name;
+          }
+        }
+
         // Vérifier si l'appel existe déjà (doublon)
         // Un doublon = même appelant + même date de création (à la seconde près)
         const duplicateCheck = await pool.query(
@@ -511,7 +539,7 @@ exports.importCalls = async (req, res) => {
            WHERE tenant_id = $1 
            AND caller_name = $2 
            AND created_at = $3`,
-          [tenantId, caller, createdAt || new Date()]
+          [tenantId, callerName, createdAt || new Date()]
         );
 
         if (duplicateCheck.rows.length > 0) {
@@ -529,8 +557,8 @@ exports.importCalls = async (req, res) => {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
           [
             tenantId,
-            caller,
-            reason || null,
+            callerName,
+            reasonName,
             isBlocking,
             isGLPI,
             glpiNumber || null,
@@ -575,17 +603,17 @@ exports.importCalls = async (req, res) => {
         }
 
         // Ajouter aux tables d'autocomplétion si nécessaire
-        if (caller) {
+        if (callerName) {
           await pool.query(
             'INSERT INTO callers (tenant_id, name) VALUES ($1, $2) ON CONFLICT (tenant_id, name) DO NOTHING',
-            [tenantId, caller]
+            [tenantId, callerName]
           );
         }
 
-        if (reason) {
+        if (reasonName) {
           await pool.query(
             'INSERT INTO reasons (tenant_id, name) VALUES ($1, $2) ON CONFLICT (tenant_id, name) DO NOTHING',
-            [tenantId, reason]
+            [tenantId, reasonName]
           );
         }
 
@@ -630,7 +658,7 @@ exports.forceArchive = async (req, res) => {
         archived_by = $1
       WHERE 
         is_archived = false 
-        AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') < CURRENT_DATE
+        AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') < DATE(NOW() AT TIME ZONE 'Europe/Paris')
     `;
     
     const params = [req.user.userId];

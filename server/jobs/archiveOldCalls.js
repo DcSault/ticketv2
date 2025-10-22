@@ -13,7 +13,7 @@ async function archiveOldCalls() {
         archived_by = NULL
       WHERE 
         is_archived = false 
-        AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') < CURRENT_DATE
+        AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') < DATE(NOW() AT TIME ZONE 'Europe/Paris')
       RETURNING id
     `);
 
