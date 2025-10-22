@@ -117,7 +117,10 @@ export const adminService = {
   exportCalls: (params) => api.get('/calls', { params }),
 
   // Statistics
-  getGlobalStatistics: () => api.get('/admin/statistics')
+  getGlobalStatistics: () => api.get('/admin/statistics'),
+
+  // Archive
+  forceArchive: () => api.post('/admin/force-archive')
 };
 
 export default api;

@@ -17,6 +17,7 @@ function AdminTenant() {
     role: 'user',
     noPasswordLogin: false
   });
+  const [archiving, setArchiving] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'tenant_admin' && user?.role !== 'global_admin') {
@@ -108,6 +109,23 @@ function AdminTenant() {
     setUserForm({ username: '', password: '', fullName: '', role: 'user', noPasswordLogin: false });
   };
 
+  const handleForceArchive = async () => {
+    if (!confirm('⚠️ Êtes-vous sûr de vouloir archiver tous les appels des jours précédents ?\n\nCette action archivera tous les appels créés avant aujourd\'hui qui ne sont pas encore archivés.')) {
+      return;
+    }
+
+    setArchiving(true);
+    try {
+      const response = await adminService.forceArchive();
+      alert(`✅ ${response.data.message}\n\n${response.data.count} appel(s) archivé(s)`);
+    } catch (error) {
+      console.error('Force archive error:', error);
+      alert('❌ Erreur lors de l\'archivage forcé');
+    } finally {
+      setArchiving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
@@ -162,12 +180,22 @@ function AdminTenant() {
         <div className="card">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800">👥 Gestion des Utilisateurs</h2>
-            <button
-              onClick={openCreateModal}
-              className="btn btn-primary"
-            >
-              ➕ Nouvel Utilisateur
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleForceArchive}
+                disabled={archiving}
+                className="btn btn-secondary flex items-center gap-2"
+                title="Archiver tous les appels des jours précédents"
+              >
+                {archiving ? '⏳ Archivage...' : '📦 Forcer archivage'}
+              </button>
+              <button
+                onClick={openCreateModal}
+                className="btn btn-primary"
+              >
+                ➕ Nouvel Utilisateur
+              </button>
+            </div>
           </div>
 
           {loading ? (

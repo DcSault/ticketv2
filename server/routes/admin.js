@@ -39,4 +39,7 @@ router.post('/import-calls', requireGlobalAdmin, upload.single('file'), adminCon
 // Statistiques globales (seulement global_admin)
 router.get('/statistics', requireGlobalAdmin, adminController.getGlobalStatistics);
 
+// Forcer l'archivage manuel (tenant_admin peut forcer pour son tenant)
+router.post('/force-archive', requireTenantAdmin, adminController.forceArchive);
+
 module.exports = router;

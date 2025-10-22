@@ -615,3 +615,45 @@ exports.importCalls = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+// Forcer l'archivage manuel des appels précédents
+exports.forceArchive = async (req, res) => {
+  const userRole = req.user.role;
+  const userTenantId = req.user.tenantId;
+
+  try {
+    let query = `
+      UPDATE calls 
+      SET 
+        is_archived = true,
+        archived_at = NOW(),
+        archived_by = $1
+      WHERE 
+        is_archived = false 
+        AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') < CURRENT_DATE
+    `;
+    
+    const params = [req.user.userId];
+    
+    // tenant_admin ne peut archiver que les appels de son tenant
+    if (userRole === 'tenant_admin') {
+      query += ' AND tenant_id = $2';
+      params.push(userTenantId);
+    }
+    
+    query += ' RETURNING id';
+
+    const result = await pool.query(query, params);
+    const count = result.rowCount;
+
+    console.log(`✅ Archivage manuel : ${count} appels archivés par ${req.user.username}`);
+
+    res.json({
+      message: `${count} appel(s) archivé(s) avec succès`,
+      count
+    });
+  } catch (error) {
+    console.error('Force archive error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
