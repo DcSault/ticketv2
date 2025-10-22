@@ -681,6 +681,7 @@ exports.forceArchive = async (req, res) => {
   const userTenantId = req.user.tenantId;
 
   try {
+    // Méthode simplifiée : archive tout ce qui a plus de 24h
     let query = `
       UPDATE calls 
       SET 
@@ -689,7 +690,7 @@ exports.forceArchive = async (req, res) => {
         archived_by = $1
       WHERE 
         is_archived = false 
-        AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') < DATE(NOW() AT TIME ZONE 'Europe/Paris')
+        AND created_at < (NOW() - INTERVAL '24 hours')
     `;
     
     const params = [req.user.userId];
@@ -700,19 +701,33 @@ exports.forceArchive = async (req, res) => {
       params.push(userTenantId);
     }
     
-    query += ' RETURNING id';
+    query += ' RETURNING id, caller_name, created_at';
 
     const result = await pool.query(query, params);
     const count = result.rowCount;
 
     console.log(`✅ Archivage manuel : ${count} appels archivés par ${req.user.username}`);
+    
+    // Log des exemples
+    if (result.rows.length > 0) {
+      console.log('  Exemples:', result.rows.slice(0, 3).map(r => 
+        `${r.caller_name} (${new Date(r.created_at).toLocaleString('fr-FR')})`
+      ).join(', '));
+    }
 
     res.json({
-      message: `${count} appel(s) archivé(s) avec succès`,
-      count
+      message: count > 0 
+        ? `${count} appel(s) archivé(s) avec succès` 
+        : 'Aucun appel à archiver (tous récents ou déjà archivés)',
+      count,
+      examples: result.rows.slice(0, 5).map(r => ({
+        id: r.id,
+        caller: r.caller_name,
+        date: r.created_at
+      }))
     });
   } catch (error) {
     console.error('Force archive error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 };

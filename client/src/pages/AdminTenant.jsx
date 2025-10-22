@@ -110,17 +110,30 @@ function AdminTenant() {
   };
 
   const handleForceArchive = async () => {
-    if (!confirm('⚠️ Êtes-vous sûr de vouloir archiver tous les appels des jours précédents ?\n\nCette action archivera tous les appels créés avant aujourd\'hui qui ne sont pas encore archivés.')) {
+    if (!confirm('⚠️ Êtes-vous sûr de vouloir archiver tous les appels de plus de 24h ?\n\nCette action archivera tous les appels créés il y a plus de 24 heures qui ne sont pas encore archivés.')) {
       return;
     }
 
     setArchiving(true);
     try {
       const response = await adminService.forceArchive();
-      alert(`✅ ${response.data.message}\n\n${response.data.count} appel(s) archivé(s)`);
+      const { count, message, examples } = response.data;
+      
+      let detailMessage = `✅ ${message}`;
+      
+      if (count > 0 && examples && examples.length > 0) {
+        detailMessage += '\n\nExemples d\'appels archivés :';
+        examples.forEach(ex => {
+          const date = new Date(ex.date).toLocaleString('fr-FR');
+          detailMessage += `\n• ${ex.caller} (${date})`;
+        });
+      }
+      
+      alert(detailMessage);
     } catch (error) {
       console.error('Force archive error:', error);
-      alert('❌ Erreur lors de l\'archivage forcé');
+      const errorMsg = error.response?.data?.details || error.response?.data?.error || 'Erreur inconnue';
+      alert(`❌ Erreur lors de l'archivage forcé:\n${errorMsg}`);
     } finally {
       setArchiving(false);
     }

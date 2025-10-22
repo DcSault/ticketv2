@@ -5,6 +5,8 @@ const pool = require('../config/database');
  */
 async function archiveOldCalls() {
   try {
+    // Méthode simplifiée : archive tout ce qui a plus de 24h
+    // Évite les problèmes de timezone
     const result = await pool.query(`
       UPDATE calls 
       SET 
@@ -13,13 +15,21 @@ async function archiveOldCalls() {
         archived_by = NULL
       WHERE 
         is_archived = false 
-        AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris') < DATE(NOW() AT TIME ZONE 'Europe/Paris')
-      RETURNING id
+        AND created_at < (NOW() - INTERVAL '24 hours')
+      RETURNING id, caller_name, created_at
     `);
 
     const count = result.rowCount;
     if (count > 0) {
-      console.log(`✅ ${count} appels archivés automatiquement (jours précédents)`);
+      console.log(`✅ ${count} appels archivés automatiquement (plus de 24h)`);
+      // Log quelques exemples
+      if (result.rows.length > 0) {
+        console.log('  Exemples:', result.rows.slice(0, 3).map(r => 
+          `${r.caller_name} (${new Date(r.created_at).toLocaleString('fr-FR')})`
+        ).join(', '));
+      }
+    } else {
+      console.log('ℹ️  Aucun appel à archiver (tous récents ou déjà archivés)');
     }
     
     return count;
