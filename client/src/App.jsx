@@ -12,6 +12,7 @@ import AdminTenant from './pages/AdminTenant';
 import Archives from './pages/Archives';
 import DataManagement from './pages/DataManagement';
 import ExportManager from './pages/ExportManager';
+import ImportManager from './pages/ImportManager';
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -129,6 +130,15 @@ function AppRouter() {
         element={
           <TenantAdminRoute>
             <ExportManager />
+          </TenantAdminRoute>
+        }
+      />
+      
+      <Route
+        path="/import-manager"
+        element={
+          <TenantAdminRoute>
+            <ImportManager />
           </TenantAdminRoute>
         }
       />

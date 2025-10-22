@@ -125,6 +125,13 @@ function AdminTenant() {
           </div>
           <div className="flex items-center gap-4">
             <button
+              onClick={() => navigate('/archives')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              📦 Archives
+            </button>
+            <span className="text-gray-300">|</span>
+            <button
               onClick={() => navigate('/data-management')}
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
@@ -136,6 +143,13 @@ function AdminTenant() {
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
               📊 Exports avancés
+            </button>
+            <span className="text-gray-300">|</span>
+            <button
+              onClick={() => navigate('/import-manager')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              📥 Imports
             </button>
             <span className="text-gray-300">|</span>
             <span className="text-sm text-gray-600">

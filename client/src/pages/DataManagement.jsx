@@ -207,25 +207,52 @@ function DataManagement() {
               onClick={() => navigate('/app')}
               className="text-sm text-gray-600 hover:text-blue-600 font-medium"
             >
-              Application
+              📱 Application
             </button>
-            {user?.role === 'global_admin' && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-              >
-                Admin
-              </button>
-            )}
-            {user?.role === 'tenant_admin' && (
-              <button
-                onClick={() => navigate('/admin-tenant')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-              >
-                Admin Tenant
-              </button>
-            )}
             <span className="text-gray-300">|</span>
+            <button
+              onClick={() => navigate('/archives')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              📦 Archives
+            </button>
+            <span className="text-gray-300">|</span>
+            {user?.role === 'global_admin' && (
+              <>
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                >
+                  🔐 Admin Global
+                </button>
+                <span className="text-gray-300">|</span>
+              </>
+            )}
+            {(user?.role === 'tenant_admin' || user?.role === 'global_admin') && (
+              <>
+                <button
+                  onClick={() => navigate('/admin-tenant')}
+                  className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                >
+                  👥 Admin Tenant
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  onClick={() => navigate('/export-manager')}
+                  className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                >
+                  📊 Exports
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  onClick={() => navigate('/import-manager')}
+                  className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+                >
+                  📥 Imports
+                </button>
+                <span className="text-gray-300">|</span>
+              </>
+            )}
             <span className="text-sm text-gray-600">{user?.fullName || user?.username}</span>
             <button
               onClick={() => authService.logout()}

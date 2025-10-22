@@ -365,6 +365,27 @@ function ExportManager() {
             <span className="text-gray-600">📊 Gestionnaire d'Exports</span>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/admin-tenant')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              👥 Admin Tenant
+            </button>
+            <span className="text-gray-300">|</span>
+            <button
+              onClick={() => navigate('/archives')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              📦 Archives
+            </button>
+            <span className="text-gray-300">|</span>
+            <button
+              onClick={() => navigate('/import-manager')}
+              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
+            >
+              📥 Imports
+            </button>
+            <span className="text-gray-300">|</span>
             <span className="text-sm text-gray-600">
               {user?.fullName || user?.username}
             </span>

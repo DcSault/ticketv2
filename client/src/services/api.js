@@ -113,6 +113,9 @@ export const adminService = {
     });
   },
 
+  // Export
+  exportCalls: (params) => api.get('/calls', { params }),
+
   // Statistics
   getGlobalStatistics: () => api.get('/admin/statistics')
 };
