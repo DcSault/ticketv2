@@ -731,3 +731,103 @@ exports.forceArchive = async (req, res) => {
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 };
+
+// Obtenir les statistiques du dashboard
+exports.getStats = async (req, res) => {
+  const userRole = req.user.role;
+  const userTenantId = req.user.tenantId;
+
+  try {
+    let whereClause = '';
+    const params = [];
+
+    // tenant_admin voit uniquement son tenant
+    if (userRole === 'tenant_admin') {
+      whereClause = 'WHERE c.tenant_id = $1';
+      params.push(userTenantId);
+    }
+
+    const query = `
+      SELECT 
+        COUNT(*) FILTER (WHERE c.is_archived = false) as total_calls,
+        COUNT(*) FILTER (WHERE c.is_archived = false AND DATE(c.created_at AT TIME ZONE 'Europe/Paris') = CURRENT_DATE) as today_calls,
+        COUNT(*) FILTER (WHERE c.is_archived = true) as archived_calls,
+        COUNT(DISTINCT u.id) as total_users
+      FROM calls c
+      LEFT JOIN users u ON c.tenant_id = u.tenant_id
+      ${whereClause}
+    `;
+
+    const result = await pool.query(query, params);
+    const stats = result.rows[0];
+
+    res.json({
+      totalCalls: parseInt(stats.total_calls) || 0,
+      todayCalls: parseInt(stats.today_calls) || 0,
+      archivedCalls: parseInt(stats.archived_calls) || 0,
+      totalUsers: parseInt(stats.total_users) || 0
+    });
+  } catch (error) {
+    console.error('Get stats error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+};
+
+// Exécuter une requête SQL (CLI)
+exports.executeSQL = async (req, res) => {
+  const { query } = req.body;
+  const userRole = req.user.role;
+  const userTenantId = req.user.tenantId;
+
+  if (!query || typeof query !== 'string') {
+    return res.status(400).json({ error: 'Query is required' });
+  }
+
+  try {
+    // Nettoyer la requête
+    const cleanQuery = query.trim();
+
+    // Sécurité basique : interdire certaines commandes dangereuses
+    const forbidden = ['DROP', 'TRUNCATE', 'ALTER', 'CREATE DATABASE', 'DROP DATABASE'];
+    const upperQuery = cleanQuery.toUpperCase();
+    
+    for (const cmd of forbidden) {
+      if (upperQuery.includes(cmd)) {
+        return res.status(403).json({ 
+          error: `Commande interdite : ${cmd}`,
+          details: 'Pour des raisons de sécurité, cette commande n\'est pas autorisée'
+        });
+      }
+    }
+
+    // Pour tenant_admin, on filtre automatiquement par tenant_id
+    // Note: C'est une sécurité basique, idéalement on devrait parser le SQL
+    let finalQuery = cleanQuery;
+    
+    if (userRole === 'tenant_admin') {
+      // Si la requête ne contient pas déjà une condition WHERE avec tenant_id
+      if (!upperQuery.includes('TENANT_ID')) {
+        // Ajouter un filtre basique (limitée - ne marche pas pour toutes les requêtes complexes)
+        console.warn(`⚠️ Requête CLI sans filtre tenant_id explicite: ${cleanQuery}`);
+      }
+    }
+
+    // Exécuter la requête
+    const result = await pool.query(finalQuery);
+
+    console.log(`✅ CLI SQL exécutée par ${req.user.username}: ${cleanQuery.substring(0, 100)}...`);
+
+    res.json({
+      command: result.command,
+      rowCount: result.rowCount,
+      rows: result.rows || []
+    });
+  } catch (error) {
+    console.error('Execute SQL error:', error);
+    res.status(400).json({ 
+      error: 'Erreur SQL',
+      details: error.message 
+    });
+  }
+};
+

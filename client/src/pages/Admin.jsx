@@ -416,8 +416,8 @@ function ImportTab({ tenants, loadTenants }) {
         // Format nouveau : tableau direct (exports CallFixV2)
         if (Array.isArray(data)) {
           calls = data.map(call => ({
-            caller: call.caller_name || call.caller_id || call.caller,
-            reason: call.reason_name || call.reason_id || call.reason,
+            caller: call.caller_name || call.caller || 'Inconnu',
+            reason: call.reason_name || call.reason || 'Non spécifié',
             isBlocking: call.is_blocking,
             isGLPI: call.is_glpi,
             glpiNumber: call.glpi_number || '',
@@ -435,8 +435,8 @@ function ImportTab({ tenants, loadTenants }) {
           data.groups.forEach(group => {
             if (group.calls && Array.isArray(group.calls)) {
               calls.push(...group.calls.map(call => ({
-                caller: call.caller_name || call.caller_id || call.caller,
-                reason: call.reason_name || call.reason_id || call.reason,
+                caller: call.caller_name || call.caller || 'Inconnu',
+                reason: call.reason_name || call.reason || 'Non spécifié',
                 isBlocking: call.is_blocking,
                 isGLPI: call.is_glpi,
                 glpiNumber: call.glpi_number || '',

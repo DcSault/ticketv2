@@ -120,7 +120,13 @@ export const adminService = {
   getGlobalStatistics: () => api.get('/admin/statistics'),
 
   // Archive
-  forceArchive: () => api.post('/admin/force-archive')
+  forceArchive: () => api.post('/admin/force-archive'),
+
+  // Stats Dashboard
+  getStats: () => api.get('/admin/stats'),
+
+  // CLI SQL
+  executeSQL: (data) => api.post('/admin/execute-sql', data)
 };
 
 export default api;

@@ -6,6 +6,10 @@ function AdminTenant() {
   const navigate = useNavigate();
   const user = authService.getCurrentUser();
 
+  // Onglets
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Users
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -19,13 +23,37 @@ function AdminTenant() {
   });
   const [archiving, setArchiving] = useState(false);
 
+  // CLI
+  const [cliQuery, setCliQuery] = useState('');
+  const [cliResults, setCliResults] = useState(null);
+  const [cliLoading, setCliLoading] = useState(false);
+  const [cliError, setCliError] = useState(null);
+
+  // Stats Dashboard
+  const [stats, setStats] = useState({
+    totalCalls: 0,
+    todayCalls: 0,
+    archivedCalls: 0,
+    totalUsers: 0
+  });
+
   useEffect(() => {
     if (user?.role !== 'tenant_admin' && user?.role !== 'global_admin') {
       navigate('/');
       return;
     }
     loadUsers();
+    loadStats();
   }, []);
+
+  const loadStats = async () => {
+    try {
+      const response = await adminService.getStats();
+      setStats(response.data);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
 
   const loadUsers = async () => {
     setLoading(true);
@@ -130,6 +158,7 @@ function AdminTenant() {
       }
       
       alert(detailMessage);
+      loadStats(); // Refresh stats
     } catch (error) {
       console.error('Force archive error:', error);
       const errorMsg = error.response?.data?.details || error.response?.data?.error || 'Erreur inconnue';
@@ -137,6 +166,31 @@ function AdminTenant() {
     } finally {
       setArchiving(false);
     }
+  };
+
+  const executeCLI = async () => {
+    if (!cliQuery.trim()) {
+      setCliError('Veuillez entrer une requête SQL');
+      return;
+    }
+
+    setCliLoading(true);
+    setCliError(null);
+    setCliResults(null);
+
+    try {
+      const response = await adminService.executeSQL({ query: cliQuery });
+      setCliResults(response.data);
+    } catch (error) {
+      console.error('CLI error:', error);
+      setCliError(error.response?.data?.error || 'Erreur lors de l\'exécution');
+    } finally {
+      setCliLoading(false);
+    }
+  };
+
+  const quickQuery = (query) => {
+    setCliQuery(query);
   };
 
   return (
@@ -190,18 +244,161 @@ function AdminTenant() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="card">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">👥 Gestion des Utilisateurs</h2>
-            <div className="flex gap-3">
-              <button
-                onClick={handleForceArchive}
-                disabled={archiving}
-                className="btn btn-secondary flex items-center gap-2"
-                title="Archiver tous les appels des jours précédents"
-              >
-                {archiving ? '⏳ Archivage...' : '📦 Forcer archivage'}
-              </button>
+        {/* Onglets */}
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'dashboard'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              📊 Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'users'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              👥 Utilisateurs
+            </button>
+            <button
+              onClick={() => setActiveTab('cli')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'cli'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              💻 CLI SQL
+            </button>
+          </nav>
+        </div>
+
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <div className="text-sm opacity-90">Appels Total</div>
+                <div className="text-3xl font-bold mt-2">{stats.totalCalls}</div>
+              </div>
+              <div className="card bg-gradient-to-br from-green-500 to-green-600 text-white">
+                <div className="text-sm opacity-90">Appels Aujourd'hui</div>
+                <div className="text-3xl font-bold mt-2">{stats.todayCalls}</div>
+              </div>
+              <div className="card bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <div className="text-sm opacity-90">Appels Archivés</div>
+                <div className="text-3xl font-bold mt-2">{stats.archivedCalls}</div>
+              </div>
+              <div className="card bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+                <div className="text-sm opacity-90">Utilisateurs</div>
+                <div className="text-3xl font-bold mt-2">{stats.totalUsers}</div>
+              </div>
+            </div>
+
+            {/* Actions rapides */}
+            <div className="card">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Actions Rapides</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <button
+                  onClick={() => navigate('/')}
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                >
+                  <div className="text-2xl mb-2">📞</div>
+                  <div className="font-semibold">Nouveau Ticket</div>
+                  <div className="text-sm text-gray-500">Créer un appel</div>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/archives')}
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                >
+                  <div className="text-2xl mb-2">📦</div>
+                  <div className="font-semibold">Archives</div>
+                  <div className="text-sm text-gray-500">Consulter l'historique</div>
+                </button>
+
+                <button
+                  onClick={() => navigate('/data-management')}
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                >
+                  <div className="text-2xl mb-2">📋</div>
+                  <div className="font-semibold">Gestion Données</div>
+                  <div className="text-sm text-gray-500">Appelants & Raisons</div>
+                </button>
+
+                <button
+                  onClick={() => navigate('/export-manager')}
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                >
+                  <div className="text-2xl mb-2">📊</div>
+                  <div className="font-semibold">Exports Avancés</div>
+                  <div className="text-sm text-gray-500">Exporter les données</div>
+                </button>
+
+                <button
+                  onClick={handleForceArchive}
+                  disabled={archiving}
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left disabled:opacity-50"
+                >
+                  <div className="text-2xl mb-2">🗂️</div>
+                  <div className="font-semibold">
+                    {archiving ? 'Archivage...' : 'Forcer Archivage'}
+                  </div>
+                  <div className="text-sm text-gray-500">Archiver appels &gt; 24h</div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('cli')}
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                >
+                  <div className="text-2xl mb-2">💻</div>
+                  <div className="font-semibold">CLI SQL</div>
+                  <div className="text-sm text-gray-500">Requêtes manuelles</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Informations système */}
+            <div className="card">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">ℹ️ Informations Système</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Tenant</span>
+                  <span className="font-semibold">{user?.tenant_name || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Utilisateur</span>
+                  <span className="font-semibold">{user?.fullName || user?.username}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Rôle</span>
+                  <span className="font-semibold">
+                    {user?.role === 'global_admin' ? '👑 Admin Global' : 
+                     user?.role === 'tenant_admin' ? '🔑 Admin Tenant' : 'Utilisateur'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-600">Version</span>
+                  <span className="font-semibold">CallFixV2 v2.1.0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div className="card">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">👥 Gestion des Utilisateurs</h2>
               <button
                 onClick={openCreateModal}
                 className="btn btn-primary"
@@ -209,7 +406,6 @@ function AdminTenant() {
                 ➕ Nouvel Utilisateur
               </button>
             </div>
-          </div>
 
           {loading ? (
             <div className="text-center py-8">Chargement...</div>
@@ -267,7 +463,168 @@ function AdminTenant() {
               </table>
             </div>
           )}
-        </div>
+          </div>
+        )}
+
+        {/* CLI Tab */}
+        {activeTab === 'cli' && (
+          <div className="space-y-4">
+            <div className="card">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">💻 CLI SQL - Requêtes Manuelles</h3>
+              
+              {/* Quick Queries */}
+              <div className="mb-4">
+                <div className="text-sm font-semibold text-gray-700 mb-2">⚡ Requêtes rapides :</div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => quickQuery('SELECT COUNT(*) as total FROM calls WHERE is_archived = false;')}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded"
+                  >
+                    Compter appels actifs
+                  </button>
+                  <button
+                    onClick={() => quickQuery('SELECT COUNT(*) as total FROM calls WHERE is_archived = true;')}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded"
+                  >
+                    Compter archivés
+                  </button>
+                  <button
+                    onClick={() => quickQuery('SELECT * FROM calls WHERE created_at < (NOW() - INTERVAL \'24 hours\') AND is_archived = false ORDER BY created_at DESC LIMIT 10;')}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded"
+                  >
+                    Appels &gt; 24h non archivés
+                  </button>
+                  <button
+                    onClick={() => quickQuery('SELECT caller_name, COUNT(*) as count FROM calls GROUP BY caller_name ORDER BY count DESC LIMIT 10;')}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded"
+                  >
+                    Top 10 appelants
+                  </button>
+                  <button
+                    onClick={() => quickQuery('SELECT * FROM calls ORDER BY created_at DESC LIMIT 20;')}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded"
+                  >
+                    20 derniers appels
+                  </button>
+                </div>
+              </div>
+
+              {/* Query Input */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Requête SQL :
+                </label>
+                <textarea
+                  value={cliQuery}
+                  onChange={(e) => setCliQuery(e.target.value)}
+                  className="input font-mono text-sm"
+                  rows="6"
+                  placeholder="SELECT * FROM calls WHERE ..."
+                />
+              </div>
+
+              {/* Execute Button */}
+              <div className="flex gap-2">
+                <button
+                  onClick={executeCLI}
+                  disabled={cliLoading}
+                  className="btn btn-primary"
+                >
+                  {cliLoading ? '⏳ Exécution...' : '▶️ Exécuter'}
+                </button>
+                <button
+                  onClick={() => {
+                    setCliQuery('');
+                    setCliResults(null);
+                    setCliError(null);
+                  }}
+                  className="btn btn-secondary"
+                >
+                  🗑️ Effacer
+                </button>
+              </div>
+
+              {/* Error */}
+              {cliError && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
+                  <div className="font-semibold mb-1">❌ Erreur</div>
+                  <div className="text-sm">{cliError}</div>
+                </div>
+              )}
+
+              {/* Results */}
+              {cliResults && (
+                <div className="mt-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="text-sm font-semibold text-gray-700">
+                      ✅ Résultats ({cliResults.rowCount} ligne{cliResults.rowCount > 1 ? 's' : ''})
+                    </div>
+                    {cliResults.command && (
+                      <div className="text-xs text-gray-500">
+                        Commande: {cliResults.command}
+                      </div>
+                    )}
+                  </div>
+
+                  {cliResults.rows && cliResults.rows.length > 0 ? (
+                    <div className="overflow-x-auto max-h-96 border border-gray-200 rounded-lg">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            {Object.keys(cliResults.rows[0]).map(key => (
+                              <th key={key} className="text-left py-2 px-3 border-b border-gray-200 font-semibold">
+                                {key}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="font-mono text-xs">
+                          {cliResults.rows.map((row, i) => (
+                            <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
+                              {Object.values(row).map((val, j) => (
+                                <td key={j} className="py-2 px-3">
+                                  {val === null ? (
+                                    <span className="text-gray-400 italic">null</span>
+                                  ) : typeof val === 'boolean' ? (
+                                    val ? '✓' : '✗'
+                                  ) : val instanceof Date ? (
+                                    new Date(val).toLocaleString('fr-FR')
+                                  ) : (
+                                    String(val)
+                                  )}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 text-sm">
+                      Aucune ligne retournée
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Warning */}
+            <div className="card bg-yellow-50 border-yellow-200">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">⚠️</div>
+                <div>
+                  <div className="font-semibold text-yellow-800 mb-1">Attention</div>
+                  <div className="text-sm text-yellow-700">
+                    • Les requêtes UPDATE/DELETE sont autorisées - faites attention !<br/>
+                    • Seules les requêtes sur votre tenant sont autorisées (filtrage automatique)<br/>
+                    • Les transactions ne sont pas supportées<br/>
+                    • Évitez les requêtes lourdes qui pourraient ralentir le système
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Utilisateur */}

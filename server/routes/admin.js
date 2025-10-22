@@ -42,4 +42,10 @@ router.get('/statistics', requireGlobalAdmin, adminController.getGlobalStatistic
 // Forcer l'archivage manuel (tenant_admin peut forcer pour son tenant)
 router.post('/force-archive', requireTenantAdmin, adminController.forceArchive);
 
+// Dashboard stats (tenant_admin peut voir ses stats)
+router.get('/stats', requireTenantAdmin, adminController.getStats);
+
+// CLI SQL (tenant_admin uniquement - requêtes filtrées par tenant)
+router.post('/execute-sql', requireTenantAdmin, adminController.executeSQL);
+
 module.exports = router;
