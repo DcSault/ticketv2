@@ -504,31 +504,71 @@ exports.importCalls = async (req, res) => {
           continue;
         }
 
-        // Résoudre caller si c'est un ID
+        // Résoudre caller : soit un nom, soit un ID à résoudre
         let callerName = caller;
+        let callerId = null;
+        
         if (typeof caller === 'number' || !isNaN(caller)) {
+          // C'est un ID numérique - le résoudre
           const callerResult = await pool.query(
-            'SELECT name FROM callers WHERE id = $1 AND tenant_id = $2',
+            'SELECT id, name FROM callers WHERE id = $1 AND tenant_id = $2',
             [caller, tenantId]
           );
           if (callerResult.rows.length > 0) {
+            callerId = callerResult.rows[0].id;
             callerName = callerResult.rows[0].name;
           } else {
             errors.push(`Appel ignoré : caller_id ${caller} introuvable`);
             skipped++;
             continue;
           }
+        } else {
+          // C'est un nom - créer ou récupérer l'ID
+          const callerResult = await pool.query(
+            'SELECT id FROM callers WHERE name = $1 AND tenant_id = $2',
+            [caller, tenantId]
+          );
+          if (callerResult.rows.length > 0) {
+            callerId = callerResult.rows[0].id;
+          } else {
+            const newCaller = await pool.query(
+              'INSERT INTO callers (name, tenant_id) VALUES ($1, $2) RETURNING id',
+              [caller, tenantId]
+            );
+            callerId = newCaller.rows[0].id;
+          }
         }
 
-        // Résoudre reason si c'est un ID
+        // Résoudre reason : soit un nom, soit un ID à résoudre
         let reasonName = reason || null;
-        if (reason && (typeof reason === 'number' || !isNaN(reason))) {
-          const reasonResult = await pool.query(
-            'SELECT name FROM reasons WHERE id = $1 AND tenant_id = $2',
-            [reason, tenantId]
-          );
-          if (reasonResult.rows.length > 0) {
-            reasonName = reasonResult.rows[0].name;
+        let reasonId = null;
+        
+        if (reason) {
+          if (typeof reason === 'number' || !isNaN(reason)) {
+            // C'est un ID numérique - le résoudre
+            const reasonResult = await pool.query(
+              'SELECT id, name FROM reasons WHERE id = $1 AND tenant_id = $2',
+              [reason, tenantId]
+            );
+            if (reasonResult.rows.length > 0) {
+              reasonId = reasonResult.rows[0].id;
+              reasonName = reasonResult.rows[0].name;
+            }
+          } else {
+            // C'est un nom - créer ou récupérer l'ID
+            const reasonResult = await pool.query(
+              'SELECT id FROM reasons WHERE name = $1 AND tenant_id = $2',
+              [reason, tenantId]
+            );
+            if (reasonResult.rows.length > 0) {
+              reasonId = reasonResult.rows[0].id;
+            } else {
+              const newReason = await pool.query(
+                'INSERT INTO reasons (name, tenant_id) VALUES ($1, $2) RETURNING id',
+                [reason, tenantId]
+              );
+              reasonId = newReason.rows[0].id;
+            }
           }
         }
 
@@ -549,15 +589,18 @@ exports.importCalls = async (req, res) => {
           continue;
         }
 
-        // Créer l'appel (avec les champs d'archivage)
+        // Créer l'appel (avec les champs d'archivage + IDs)
         const callResult = await pool.query(
           `INSERT INTO calls (
-            tenant_id, caller_name, reason_name, is_blocking, is_glpi, glpi_number,
+            tenant_id, caller_id, caller_name, reason_id, reason_name, 
+            is_blocking, is_glpi, glpi_number,
             is_archived, archived_at, created_by, last_modified_by, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
           [
             tenantId,
+            callerId,
             callerName,
+            reasonId,
             reasonName,
             isBlocking,
             isGLPI,
@@ -602,20 +645,8 @@ exports.importCalls = async (req, res) => {
           }
         }
 
-        // Ajouter aux tables d'autocomplétion si nécessaire
-        if (callerName) {
-          await pool.query(
-            'INSERT INTO callers (tenant_id, name) VALUES ($1, $2) ON CONFLICT (tenant_id, name) DO NOTHING',
-            [tenantId, callerName]
-          );
-        }
-
-        if (reasonName) {
-          await pool.query(
-            'INSERT INTO reasons (tenant_id, name) VALUES ($1, $2) ON CONFLICT (tenant_id, name) DO NOTHING',
-            [tenantId, reasonName]
-          );
-        }
+        // Note: Plus besoin d'ajouter aux tables d'autocomplétion
+        // car c'est déjà fait dans la logique de résolution ci-dessus
 
         imported++;
       } catch (error) {
