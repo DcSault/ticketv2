@@ -368,10 +368,10 @@ function ImportTab({ tenants, loadTenants }) {
           calls = data.slice(0, 5).map(call => ({
             caller: call.caller_name || call.caller_id || call.caller,
             reason: call.reason_name || call.reason_id || call.reason,
-            is_blocking: call.is_blocking,
-            is_glpi: call.is_glpi,
-            glpi_number: call.glpi_number || '',
-            created_at: call.created_at
+            isBlocking: call.is_blocking,
+            isGLPI: call.is_glpi,
+            glpiNumber: call.glpi_number || '',
+            createdAt: call.created_at
           }));
         }
         // Format ancien v2.0.7
@@ -418,10 +418,11 @@ function ImportTab({ tenants, loadTenants }) {
           calls = data.map(call => ({
             caller: call.caller_name || call.caller_id || call.caller,
             reason: call.reason_name || call.reason_id || call.reason,
-            is_blocking: call.is_blocking,
-            is_glpi: call.is_glpi,
-            glpi_number: call.glpi_number || '',
-            created_at: call.created_at
+            isBlocking: call.is_blocking,
+            isGLPI: call.is_glpi,
+            glpiNumber: call.glpi_number || '',
+            createdAt: call.created_at,
+            tags: call.tags || []
           }));
         }
         // Format ancien v2.0.7
@@ -436,10 +437,11 @@ function ImportTab({ tenants, loadTenants }) {
               calls.push(...group.calls.map(call => ({
                 caller: call.caller_name || call.caller_id || call.caller,
                 reason: call.reason_name || call.reason_id || call.reason,
-                is_blocking: call.is_blocking,
-                is_glpi: call.is_glpi,
-                glpi_number: call.glpi_number || '',
-                created_at: call.created_at
+                isBlocking: call.is_blocking,
+                isGLPI: call.is_glpi,
+                glpiNumber: call.glpi_number || '',
+                createdAt: call.created_at,
+                tags: call.tags || []
               })));
             }
           });
