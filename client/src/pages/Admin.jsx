@@ -294,6 +294,9 @@ function ImportTab({ tenants, loadTenants }) {
           case 'caller':
             call.caller = value;
             break;
+          case 'caller_id':
+            call.caller = value; // ID numérique (prioritaire)
+            break;
           case 'téléphone':
           case 'caller_phone':
             call.caller_phone = value;
@@ -302,6 +305,9 @@ function ImportTab({ tenants, loadTenants }) {
           case 'reason_name':
           case 'reason':
             call.reason = value;
+            break;
+          case 'reason_id':
+            call.reason = value; // ID numérique (prioritaire)
             break;
           case 'lieu':
           case 'location':
@@ -357,9 +363,16 @@ function ImportTab({ tenants, loadTenants }) {
         const data = JSON.parse(content);
         let calls = [];
         
-        // Format nouveau : tableau direct
+        // Format nouveau : tableau direct (exports CallFixV2)
         if (Array.isArray(data)) {
-          calls = data.slice(0, 5); // Aperçu de 5 premiers
+          calls = data.slice(0, 5).map(call => ({
+            caller: call.caller_name || call.caller_id || call.caller,
+            reason: call.reason_name || call.reason_id || call.reason,
+            is_blocking: call.is_blocking,
+            is_glpi: call.is_glpi,
+            glpi_number: call.glpi_number || '',
+            created_at: call.created_at
+          }));
         }
         // Format ancien v2.0.7
         else if (data.metadata && data.data && data.data.tickets) {
@@ -391,19 +404,53 @@ function ImportTab({ tenants, loadTenants }) {
 
     try {
       const content = await file.text();
-      let jsonData;
+      let calls;
 
       // Si c'est un CSV/Excel, convertir en JSON
       if (fileType === 'csv' || fileType === 'xls' || fileType === 'xlsx') {
-        const calls = parseCSVFile(content);
-        jsonData = JSON.stringify(calls);
+        calls = parseCSVFile(content);
       } else {
-        // Valider le JSON
-        JSON.parse(content);
-        jsonData = content;
+        // Parser le JSON
+        const data = JSON.parse(content);
+        
+        // Format nouveau : tableau direct (exports CallFixV2)
+        if (Array.isArray(data)) {
+          calls = data.map(call => ({
+            caller: call.caller_name || call.caller_id || call.caller,
+            reason: call.reason_name || call.reason_id || call.reason,
+            is_blocking: call.is_blocking,
+            is_glpi: call.is_glpi,
+            glpi_number: call.glpi_number || '',
+            created_at: call.created_at
+          }));
+        }
+        // Format ancien v2.0.7
+        else if (data.metadata && data.data && data.data.tickets) {
+          calls = data.data.tickets;
+        }
+        // Format groupé (exports par appelant, raison, etc.)
+        else if (data.metadata && data.groups) {
+          calls = [];
+          data.groups.forEach(group => {
+            if (group.calls && Array.isArray(group.calls)) {
+              calls.push(...group.calls.map(call => ({
+                caller: call.caller_name || call.caller_id || call.caller,
+                reason: call.reason_name || call.reason_id || call.reason,
+                is_blocking: call.is_blocking,
+                is_glpi: call.is_glpi,
+                glpi_number: call.glpi_number || '',
+                created_at: call.created_at
+              })));
+            }
+          });
+        }
+        else {
+          throw new Error('Format JSON non reconnu');
+        }
       }
 
-      // Créer un nouveau fichier JSON
+      // Créer un nouveau fichier JSON avec le format normalisé
+      const jsonData = JSON.stringify(calls);
       const blob = new Blob([jsonData], { type: 'application/json' });
       const jsonFile = new File([blob], 'import.json', { type: 'application/json' });
 
