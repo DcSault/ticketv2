@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService, callService, adminService } from '../services/api';
 
-function App() {
+function Dashboard() {
   const navigate = useNavigate();
   const user = authService.getCurrentUser();
 
@@ -1104,4 +1104,4 @@ function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchi
   );
 }
 
-export default App;
+export default Dashboard;

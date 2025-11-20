@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+// dotenv is already loaded in index.js
 
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',

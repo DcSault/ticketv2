@@ -2,34 +2,9 @@ version: '3.8'
 
 services:
   app:
-    image: node:18-alpine
+    build: .
     container_name: ticketv2-app
-    working_dir: /app
-    command: |
-      sh -c '
-        echo "� Installing git..." &&
-        apk add --no-cache git &&
-        echo "📥 Cloning repository..." &&
-        rm -rf /tmp/ticketv2 &&
-        git clone https://github.com/DcSault/ticketv2.git /tmp/ticketv2 &&
-        echo "📦 Copying files..." &&
-        cp -R /tmp/ticketv2/* /app/ &&
-        rm -rf /tmp/ticketv2 &&
-        echo "📦 Installing dependencies..." &&
-        npm install --production=false &&
-        echo "📦 Installing client dependencies..." &&
-        cd client && npm install --production=false && cd .. &&
-        echo "🏗️  Building frontend for production..." &&
-        cd client && npm run build && cd .. &&
-        echo "✅ Verifying build..." &&
-        ls -la /app/client/dist/ &&
-        echo "🗄️  Waiting for database..." &&
-        sleep 5 &&
-        echo "🔧 Setting up database..." &&
-        node server/scripts/setup-db.js &&
-        echo "🚀 Starting application..." &&
-        npm start
-      '
+    command: sh -c "echo 'Waiting for DB...' && sleep 5 && node server/scripts/setup-db.js && node server/index.js"
     ports:
       - "7979:3000"
     depends_on:
@@ -53,8 +28,6 @@ services:
       # Default admin
       - DEFAULT_ADMIN_USERNAME=admin
       - DEFAULT_ADMIN_PASSWORD=admin123
-    volumes:
-      - ticketv2_data:/app
     networks:
       - ticketv2-network
     restart: unless-stopped

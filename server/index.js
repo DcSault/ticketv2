@@ -48,11 +48,11 @@ if (process.env.NODE_ENV === 'production') {
     });
   } else {
     console.warn('⚠️  Frontend build not found. Please run: cd client && npm run build');
-    // Rediriger vers l'API health pour éviter les erreurs
+    // Retourner une erreur 503 (Service Unavailable) au lieu de 200
     app.get('*', (req, res) => {
-      res.json({ 
+      res.status(503).json({ 
         error: 'Frontend not built', 
-        message: 'Please build the frontend or access the API directly',
+        message: 'The frontend application is not available. Please build the frontend or access the API directly.',
         api: '/api/health'
       });
     });
@@ -64,17 +64,29 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+const logger = require('./utils/logger');
+
+// ...
+
 // Gestion des erreurs globales
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
+  logger.error('Server error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
 // Démarrer le serveur
+const requiredEnvVars = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(key => !process.env[key]);
+
+if (missingEnvVars.length > 0) {
+  logger.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  process.exit(1);
+}
+
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Database: ${process.env.DB_NAME}@${process.env.DB_HOST}`);
+  logger.info(`Server running on http://localhost:${PORT}`);
+  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`Database: ${process.env.DB_NAME}@${process.env.DB_HOST}`);
   
   // Démarrer le job d'archivage automatique
   startArchiveJob();

@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const logger = require('../utils/logger');
 
 // Obtenir tous les appels du tenant
 exports.getCalls = async (req, res) => {
@@ -31,12 +32,10 @@ exports.getCalls = async (req, res) => {
     `;
 
     const params = [];
-    let paramCount = 1;
 
     if (tenantId) {
-      query += ` AND c.tenant_id = $${paramCount}`;
       params.push(tenantId);
-      paramCount++;
+      query += ` AND c.tenant_id = $${params.length}`;
     }
 
     // Filtre selon le statut d'archivage
@@ -45,37 +44,38 @@ exports.getCalls = async (req, res) => {
     } else if (archived === 'false') {
       query += ' AND c.is_archived = false';
     }
-    // Si archived n'est pas défini, on retourne tous les appels
 
     // Filtre de dates personnalisées
-    if (startDate && endDate) {
-      // Utiliser >= et < pour inclure toute la journée de fin
-      query += ` AND c.created_at >= $${paramCount}::date AND c.created_at < ($${paramCount + 1}::date + INTERVAL '1 day')`;
-      params.push(startDate, endDate);
-      paramCount += 2;
-    } else if (startDate) {
-      query += ` AND c.created_at >= $${paramCount}::date`;
+    if (startDate) {
       params.push(startDate);
-      paramCount++;
-    } else if (endDate) {
-      query += ` AND c.created_at < ($${paramCount}::date + INTERVAL '1 day')`;
+      query += ` AND c.created_at >= $${params.length}::timestamp`;
+    }
+    
+    if (endDate) {
       params.push(endDate);
-      paramCount++;
+      // Si c'est une date simple (YYYY-MM-DD), on ajoute 1 jour pour inclure la journée
+      if (endDate.length === 10) {
+         query += ` AND c.created_at < ($${params.length}::date + INTERVAL '1 day')`;
+      } else {
+         query += ` AND c.created_at <= $${params.length}::timestamp`;
+      }
     }
 
     query += ` GROUP BY c.id, cu.username, cu.full_name, mu.username, mu.full_name, au.username, au.full_name`;
     query += ` ORDER BY c.created_at DESC`;
     
-    // Si limit est 'all', ne pas ajouter de limite
-    if (limit !== 'all') {
-      query += ` LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+    // Gestion de la limite
+    if (limit === 'all') {
+      query += ` LIMIT 5000`; // Protection mémoire
+    } else {
       params.push(limit, offset);
+      query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
     }
 
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error('Get calls error:', error);
+    logger.error('Get calls error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -103,40 +103,25 @@ exports.createCall = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Créer ou récupérer l'appelant
-    let callerResult = await client.query(
-      'SELECT id FROM callers WHERE name = $1 AND tenant_id = $2',
+    // Créer ou récupérer l'appelant (Upsert)
+    const callerResult = await client.query(
+      `INSERT INTO callers (name, tenant_id) VALUES ($1, $2) 
+       ON CONFLICT (name, tenant_id) DO UPDATE SET name = EXCLUDED.name 
+       RETURNING id`,
       [caller, tenantId]
     );
-
-    let callerId;
-    if (callerResult.rows.length === 0) {
-      const newCaller = await client.query(
-        'INSERT INTO callers (name, tenant_id) VALUES ($1, $2) RETURNING id',
-        [caller, tenantId]
-      );
-      callerId = newCaller.rows[0].id;
-    } else {
-      callerId = callerResult.rows[0].id;
-    }
+    const callerId = callerResult.rows[0].id;
 
     // Créer ou récupérer la raison (si pas GLPI)
     let reasonId = null;
     if (!isGlpi && reason) {
-      let reasonResult = await client.query(
-        'SELECT id FROM reasons WHERE name = $1 AND tenant_id = $2',
+      const reasonResult = await client.query(
+        `INSERT INTO reasons (name, tenant_id) VALUES ($1, $2) 
+         ON CONFLICT (name, tenant_id) DO UPDATE SET name = EXCLUDED.name 
+         RETURNING id`,
         [reason, tenantId]
       );
-
-      if (reasonResult.rows.length === 0) {
-        const newReason = await client.query(
-          'INSERT INTO reasons (name, tenant_id) VALUES ($1, $2) RETURNING id',
-          [reason, tenantId]
-        );
-        reasonId = newReason.rows[0].id;
-      } else {
-        reasonId = reasonResult.rows[0].id;
-      }
+      reasonId = reasonResult.rows[0].id;
     }
 
     // Créer l'appel
@@ -151,32 +136,30 @@ exports.createCall = async (req, res) => {
 
     const callId = callResult.rows[0].id;
 
-    // Gérer les tags
-    const tagIds = [];
-    if (!isGlpi && tags.length > 0) {
-      for (const tagName of tags) {
-        let tagResult = await client.query(
-          'SELECT id FROM tags WHERE name = $1 AND tenant_id = $2',
-          [tagName, tenantId]
-        );
-
-        let tagId;
-        if (tagResult.rows.length === 0) {
-          const newTag = await client.query(
-            'INSERT INTO tags (name, tenant_id) VALUES ($1, $2) RETURNING id',
-            [tagName, tenantId]
-          );
-          tagId = newTag.rows[0].id;
-        } else {
-          tagId = tagResult.rows[0].id;
-        }
-
-        tagIds.push(tagId);
-
-        // Lier le tag à l'appel
+    // Gérer les tags (Batch)
+    if (!isGlpi && Array.isArray(tags) && tags.length > 0) {
+      const uniqueTags = [...new Set(tags)];
+      
+      // Insérer les nouveaux tags
+      await client.query(`
+        INSERT INTO tags (name, tenant_id)
+        SELECT t, $1 FROM unnest($2::text[]) t
+        ON CONFLICT (name, tenant_id) DO NOTHING
+      `, [tenantId, uniqueTags]);
+      
+      // Récupérer les IDs
+      const tagsResult = await client.query(`
+        SELECT id FROM tags WHERE tenant_id = $1 AND name = ANY($2::text[])
+      `, [tenantId, uniqueTags]);
+      
+      const tagIds = tagsResult.rows.map(r => r.id);
+      
+      // Lier les tags à l'appel
+      if (tagIds.length > 0) {
+        const values = tagIds.map((_, i) => `($1, $${i + 2})`).join(',');
         await client.query(
-          'INSERT INTO call_tags (call_id, tag_id) VALUES ($1, $2)',
-          [callId, tagId]
+          `INSERT INTO call_tags (call_id, tag_id) VALUES ${values} ON CONFLICT DO NOTHING`,
+          [callId, ...tagIds]
         );
       }
     }
@@ -201,7 +184,7 @@ exports.createCall = async (req, res) => {
     res.status(201).json(fullCall.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Create call error:', error);
+    logger.error('Create call error:', error);
     res.status(500).json({ error: 'Server error' });
   } finally {
     client.release();
@@ -233,7 +216,6 @@ exports.updateCall = async (req, res) => {
     let checkQuery = 'SELECT id, tenant_id FROM calls WHERE id = $1';
     const checkParams = [id];
     
-    // Si ce n'est pas un admin global, vérifier le tenant
     if (!isGlobalAdmin) {
       checkQuery += ' AND tenant_id = $2';
       checkParams.push(req.user.tenantId);
@@ -246,45 +228,30 @@ exports.updateCall = async (req, res) => {
       return res.status(404).json({ error: 'Call not found' });
     }
 
-    // Utiliser le tenant_id de l'appel pour les opérations suivantes
     const tenantId = checkCall.rows[0].tenant_id;
 
-    // Mettre à jour l'appelant si nécessaire
+    // Mettre à jour l'appelant
     let callerId = null;
     if (caller) {
-      let callerResult = await client.query(
-        'SELECT id FROM callers WHERE name = $1 AND tenant_id = $2',
+      const callerResult = await client.query(
+        `INSERT INTO callers (name, tenant_id) VALUES ($1, $2) 
+         ON CONFLICT (name, tenant_id) DO UPDATE SET name = EXCLUDED.name 
+         RETURNING id`,
         [caller, tenantId]
       );
-
-      if (callerResult.rows.length === 0) {
-        const newCaller = await client.query(
-          'INSERT INTO callers (name, tenant_id) VALUES ($1, $2) RETURNING id',
-          [caller, tenantId]
-        );
-        callerId = newCaller.rows[0].id;
-      } else {
-        callerId = callerResult.rows[0].id;
-      }
+      callerId = callerResult.rows[0].id;
     }
 
-    // Mettre à jour la raison si nécessaire
+    // Mettre à jour la raison
     let reasonId = null;
     if (reason && !isGlpi) {
-      let reasonResult = await client.query(
-        'SELECT id FROM reasons WHERE name = $1 AND tenant_id = $2',
+      const reasonResult = await client.query(
+        `INSERT INTO reasons (name, tenant_id) VALUES ($1, $2) 
+         ON CONFLICT (name, tenant_id) DO UPDATE SET name = EXCLUDED.name 
+         RETURNING id`,
         [reason, tenantId]
       );
-
-      if (reasonResult.rows.length === 0) {
-        const newReason = await client.query(
-          'INSERT INTO reasons (name, tenant_id) VALUES ($1, $2) RETURNING id',
-          [reason, tenantId]
-        );
-        reasonId = newReason.rows[0].id;
-      } else {
-        reasonId = reasonResult.rows[0].id;
-      }
+      reasonId = reasonResult.rows[0].id;
     }
 
     // Mettre à jour l'appel
@@ -305,7 +272,7 @@ exports.updateCall = async (req, res) => {
       RETURNING *
     `;
 
-    const result = await client.query(updateQuery, [
+    await client.query(updateQuery, [
       callerId,
       caller,
       reasonId,
@@ -320,32 +287,35 @@ exports.updateCall = async (req, res) => {
     ]);
 
     // Mettre à jour les tags
-    if (tags !== undefined && !isGlpi) {
+    if (tags !== undefined && !isGlpi && Array.isArray(tags)) {
       // Supprimer les anciens tags
       await client.query('DELETE FROM call_tags WHERE call_id = $1', [id]);
 
-      // Ajouter les nouveaux tags
-      for (const tagName of tags) {
-        let tagResult = await client.query(
-          'SELECT id FROM tags WHERE name = $1 AND tenant_id = $2',
-          [tagName, tenantId]
-        );
-
-        let tagId;
-        if (tagResult.rows.length === 0) {
-          const newTag = await client.query(
-            'INSERT INTO tags (name, tenant_id) VALUES ($1, $2) RETURNING id',
-            [tagName, tenantId]
+      if (tags.length > 0) {
+        const uniqueTags = [...new Set(tags)];
+        
+        // Insérer les nouveaux tags
+        await client.query(`
+          INSERT INTO tags (name, tenant_id)
+          SELECT t, $1 FROM unnest($2::text[]) t
+          ON CONFLICT (name, tenant_id) DO NOTHING
+        `, [tenantId, uniqueTags]);
+        
+        // Récupérer les IDs
+        const tagsResult = await client.query(`
+          SELECT id FROM tags WHERE tenant_id = $1 AND name = ANY($2::text[])
+        `, [tenantId, uniqueTags]);
+        
+        const tagIds = tagsResult.rows.map(r => r.id);
+        
+        // Lier les tags
+        if (tagIds.length > 0) {
+          const values = tagIds.map((_, i) => `($1, $${i + 2})`).join(',');
+          await client.query(
+            `INSERT INTO call_tags (call_id, tag_id) VALUES ${values} ON CONFLICT DO NOTHING`,
+            [id, ...tagIds]
           );
-          tagId = newTag.rows[0].id;
-        } else {
-          tagId = tagResult.rows[0].id;
         }
-
-        await client.query(
-          'INSERT INTO call_tags (call_id, tag_id) VALUES ($1, $2)',
-          [id, tagId]
-        );
       }
     }
 
@@ -369,7 +339,7 @@ exports.updateCall = async (req, res) => {
     res.json(fullCall.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Update call error:', error);
+    logger.error('Update call error:', error);
     res.status(500).json({ error: 'Server error' });
   } finally {
     client.release();
@@ -401,7 +371,7 @@ exports.deleteCall = async (req, res) => {
 
     res.json({ message: 'Call deleted successfully' });
   } catch (error) {
-    console.error('Delete call error:', error);
+    logger.error('Delete call error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -431,7 +401,7 @@ exports.archiveCall = async (req, res) => {
 
     res.json({ message: 'Call archived successfully', call: result.rows[0] });
   } catch (error) {
-    console.error('Archive call error:', error);
+    logger.error('Archive call error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -460,7 +430,7 @@ exports.unarchiveCall = async (req, res) => {
 
     res.json({ message: 'Call unarchived successfully', call: result.rows[0] });
   } catch (error) {
-    console.error('Unarchive call error:', error);
+    logger.error('Unarchive call error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -493,7 +463,7 @@ exports.getSuggestions = async (req, res) => {
 
     res.json(result.rows.map(row => row.name));
   } catch (error) {
-    console.error('Get suggestions error:', error);
+    logger.error('Get suggestions error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -550,7 +520,7 @@ exports.getQuickSuggestions = async (req, res) => {
       tags: tagsResult.rows.map(row => ({ name: row.name, count: parseInt(row.count) }))
     });
   } catch (error) {
-    console.error('Get quick suggestions error:', error);
+    logger.error('Get quick suggestions error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };;
