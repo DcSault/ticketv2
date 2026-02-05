@@ -14,6 +14,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 // Enregistrer les composants Chart.js
 ChartJS.register(
@@ -25,7 +26,8 @@ ChartJS.register(
   ArcElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ChartDataLabels
 );
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
@@ -42,7 +44,7 @@ function Statistics() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showRefreshNotification, setShowRefreshNotification] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
-  
+
   // Tenant selection for global_admin and viewer
   const canSelectTenant = user?.role === 'global_admin' || user?.role === 'viewer';
   const [tenants, setTenants] = useState([]);
@@ -60,7 +62,7 @@ function Statistics() {
 
   useEffect(() => {
     loadStatistics(false); // Premier chargement sans notification
-    
+
     // Actualisation automatique toutes les 30 secondes
     const interval = setInterval(() => {
       loadStatistics(true); // Chargements suivants avec notification
@@ -100,7 +102,7 @@ function Statistics() {
 
       const response = await statisticsService.getStatistics(params);
       setStats(response.data);
-      
+
       // Afficher la notification si demandé
       if (showNotification) {
         setLastRefreshTime(new Date());
@@ -119,13 +121,13 @@ function Statistics() {
     if (!stats?.timeRatio) {
       return { morning: 0, afternoon: 0, morningPercent: 0, afternoonPercent: 0 };
     }
-    
+
     const morning = stats.timeRatio.morning;
     const afternoon = stats.timeRatio.afternoon;
     const total = morning + afternoon;
-    
-    return { 
-      morning, 
+
+    return {
+      morning,
       afternoon,
       morningPercent: total > 0 ? Math.round((morning / total) * 100) : 0,
       afternoonPercent: total > 0 ? Math.round((afternoon / total) * 100) : 0
@@ -146,15 +148,15 @@ function Statistics() {
       const mostActive = stats.callsByHour.reduce((max, current) => {
         return (current.count > max.count) ? current : max;
       }, stats.callsByHour[0]);
-      
+
       return `${mostActive.hour}:00`;
     }
-    
+
     // Priorité 2 : Utiliser l'heure la plus active calculée par le backend (toutes périodes)
     if (stats?.mostActiveHour) {
       return `${stats.mostActiveHour.hour}:00`;
     }
-    
+
     return '-';
   };
 
@@ -164,15 +166,15 @@ function Statistics() {
       const mostActive = stats.callsByHour.reduce((max, current) => {
         return (current.count > max.count) ? current : max;
       }, stats.callsByHour[0]);
-      
+
       return mostActive.count;
     }
-    
+
     // Priorité 2 : Utiliser le count de l'heure la plus active
     if (stats?.mostActiveHour) {
       return stats.mostActiveHour.count;
     }
-    
+
     return 0;
   };
 
@@ -313,7 +315,7 @@ function Statistics() {
         {/* Filtres */}
         <div className="card mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Filtres</h2>
-          
+
           {/* Boutons de raccourcis */}
           <div className="flex gap-2 mb-4 flex-wrap items-center">
             <button
@@ -323,11 +325,10 @@ function Statistics() {
                 setEndDate('');
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md ${
-                period === 'day' && !startDate && !endDate
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md ${period === 'day' && !startDate && !endDate
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
               disabled={showAdvanced}
             >
               Aujourd'hui
@@ -354,11 +355,10 @@ function Statistics() {
                 setEndDate('');
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md ${
-                period === 'week' && !startDate && !endDate
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md ${period === 'week' && !startDate && !endDate
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
               disabled={showAdvanced}
             >
               Cette semaine
@@ -370,11 +370,10 @@ function Statistics() {
                 setEndDate('');
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                period === 'month' && !startDate && !endDate
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${period === 'month' && !startDate && !endDate
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
               disabled={showAdvanced}
             >
               Ce mois
@@ -386,27 +385,25 @@ function Statistics() {
                 setEndDate('');
                 setShowAdvanced(false);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                period === 'year' && !startDate && !endDate
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${period === 'year' && !startDate && !endDate
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
               disabled={showAdvanced}
             >
               Cette année
             </button>
-            
+
             {/* Séparateur */}
             <div className="h-8 w-px bg-gray-300 mx-2"></div>
-            
+
             {/* Bouton Avancé */}
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md ${
-                showAdvanced
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md ${showAdvanced
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               {showAdvanced ? 'Masquer' : 'Avancé'}
             </button>
@@ -454,7 +451,7 @@ function Statistics() {
                   </button>
                 </div>
               </div>
-              
+
               {(startDate || endDate) && (
                 <div className="mt-3 text-sm text-gray-600 flex items-center gap-2 animate-fade-in">
                   <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -550,6 +547,15 @@ function Statistics() {
                           callbacks: {
                             title: (context) => `${stats.callsByHour[context[0].dataIndex].hour}h00 - ${stats.callsByHour[context[0].dataIndex].hour}h59`
                           }
+                        },
+                        datalabels: {
+                          align: 'end',
+                          anchor: 'end',
+                          color: '#3B82F6',
+                          font: {
+                            weight: 'bold'
+                          },
+                          formatter: (value) => value > 0 ? value : ''
                         }
                       }
                     }}
@@ -622,24 +628,33 @@ function Statistics() {
                             title: (context) => {
                               const sortedData = [...stats.callsByDay].sort((a, b) => new Date(a.date) - new Date(b.date));
                               const dateStr = sortedData[context[0].dataIndex].date;
-                              
+
                               // Si c'est un format YYYY-MM (mois)
                               if (dateStr.match(/^\d{4}-\d{2}$/)) {
                                 const [year, month] = dateStr.split('-');
                                 const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
                                 return monthNames[parseInt(month) - 1] + ' ' + year;
                               }
-                              
+
                               // Sinon c'est une date normale
                               const date = new Date(dateStr);
-                              return date.toLocaleDateString('fr-FR', { 
+                              return date.toLocaleDateString('fr-FR', {
                                 weekday: 'long',
-                                day: '2-digit', 
+                                day: '2-digit',
                                 month: 'long',
                                 year: 'numeric'
                               });
                             }
                           }
+                        },
+                        datalabels: {
+                          align: 'end',
+                          anchor: 'end',
+                          color: '#3B82F6',
+                          font: {
+                            weight: 'bold'
+                          },
+                          formatter: (value) => value > 0 ? value : ''
                         }
                       }
                     }}
@@ -672,6 +687,22 @@ function Statistics() {
                       plugins: {
                         legend: {
                           position: 'bottom'
+                        },
+                        datalabels: {
+                          color: '#fff',
+                          font: {
+                            weight: 'bold'
+                          },
+                          formatter: (value, ctx) => {
+                            if (value === 0) return '';
+                            let sum = 0;
+                            let dataArr = ctx.chart.data.datasets[0].data;
+                            dataArr.map(data => {
+                              sum += data;
+                            });
+                            let percentage = (value * 100 / sum).toFixed(1) + "%";
+                            return `${value}\n(${percentage})`;
+                          }
                         }
                       }
                     }}
@@ -701,6 +732,22 @@ function Statistics() {
                       plugins: {
                         legend: {
                           position: 'bottom'
+                        },
+                        datalabels: {
+                          color: '#fff',
+                          font: {
+                            weight: 'bold'
+                          },
+                          formatter: (value, ctx) => {
+                            if (value === 0) return '';
+                            let sum = 0;
+                            let dataArr = ctx.chart.data.datasets[0].data;
+                            dataArr.map(data => {
+                              sum += data;
+                            });
+                            let percentage = (value * 100 / sum).toFixed(1) + "%";
+                            return `${value}\n(${percentage})`;
+                          }
                         }
                       }
                     }}
@@ -724,10 +771,10 @@ function Statistics() {
                             <span className="text-sm font-semibold text-blue-600">{caller.count}</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-500 h-2 rounded-full" 
-                              style={{ 
-                                width: `${(caller.count / stats.topCallers[0].count) * 100}%` 
+                            <div
+                              className="bg-blue-500 h-2 rounded-full"
+                              style={{
+                                width: `${(caller.count / stats.topCallers[0].count) * 100}%`
                               }}
                             ></div>
                           </div>
@@ -753,9 +800,9 @@ function Statistics() {
                             <span className="text-sm font-semibold text-green-600">{tag.count}</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="h-2 rounded-full" 
-                              style={{ 
+                            <div
+                              className="h-2 rounded-full"
+                              style={{
                                 width: `${(tag.count / stats.topTags[0].count) * 100}%`,
                                 backgroundColor: COLORS[idx % COLORS.length]
                               }}
