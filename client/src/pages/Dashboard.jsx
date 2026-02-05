@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { authService, callService, adminService } from '../services/api';
 
+// Components
+import Navbar from '../components/Navbar';
+import CallForm from '../components/CallForm';
+import CallList from '../components/CallList';
+import QuickAddModal from '../components/QuickAddModal';
+
 function Dashboard() {
-  const navigate = useNavigate();
   const user = authService.getCurrentUser();
 
   const [calls, setCalls] = useState([]);
@@ -18,43 +22,18 @@ function Dashboard() {
       : null
   );
 
-  // Form state
-  const [formData, setFormData] = useState({
-    caller: '',
-    reason: '',
-    tags: [],
-    isGlpi: false,
-    glpiNumber: '',
-    isBlocking: false
-  });
-
-  // Suggestions
-  const [callerSuggestions, setCallerSuggestions] = useState([]);
-  const [reasonSuggestions, setReasonSuggestions] = useState([]);
-  const [tagSuggestions, setTagSuggestions] = useState([]);
-  const [showCallerSuggestions, setShowCallerSuggestions] = useState(false);
-  const [showReasonSuggestions, setShowReasonSuggestions] = useState(false);
-  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
-  const [currentTag, setCurrentTag] = useState('');
-
-  // Quick form state
-  const [showQuickForm, setShowQuickForm] = useState(false);
+  // Suggestions state (managed here to be shared if needed)
+  const [suggestions, setSuggestions] = useState({ callers: [], reasons: [], tags: [] });
   const [quickSuggestions, setQuickSuggestions] = useState({ callers: [], reasons: [], tags: [] });
-  const [quickFormData, setQuickFormData] = useState({
-    caller: '',
-    reason: '',
-    tags: [],
-    isBlocking: false
-  });
 
-  // Edit state
-  const [editingCall, setEditingCall] = useState(null);
+  // Modal state
+  const [showQuickForm, setShowQuickForm] = useState(false);
 
   useEffect(() => {
     if (canSelectTenant) {
       loadTenants();
     }
-    loadQuickSuggestions(); // Charger les suggestions rapides au montage
+    loadQuickSuggestions();
   }, []);
 
   useEffect(() => {
@@ -84,7 +63,7 @@ function Dashboard() {
     try {
       const params = {
         limit: 100,
-        archived: 'false' // Ne charger que les appels actifs (non archivés)
+        archived: 'false' // Active calls only
       };
       if (canSelectTenant && selectedTenant && selectedTenant !== 'all') {
         params.tenantId = selectedTenant;
@@ -105,37 +84,53 @@ function Dashboard() {
         callService.getSuggestions('reasons'),
         callService.getSuggestions('tags')
       ]);
-      setCallerSuggestions(callers.data);
-      setReasonSuggestions(reasons.data);
-      setTagSuggestions(tags.data);
+      setSuggestions({
+        callers: callers.data,
+        reasons: reasons.data,
+        tags: tags.data
+      });
     } catch (error) {
       console.error('Error loading suggestions:', error);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const loadQuickSuggestions = async () => {
+    try {
+      const response = await callService.getQuickSuggestions();
+      setQuickSuggestions(response.data);
+    } catch (error) {
+      console.error('Error loading quick suggestions:', error);
+    }
+  };
 
+  const handleCreateCall = async (formData, onSuccess) => {
     try {
       const response = await callService.createCall(formData);
       setCalls([response.data, ...calls]);
 
-      // Reset form
-      setFormData({
-        caller: '',
-        reason: '',
-        tags: [],
-        isGlpi: false,
-        glpiNumber: '',
-        isBlocking: false
-      });
+      if (onSuccess) onSuccess();
 
-      // Reload suggestions et appels pour voir les nouveaux dans les stats
+      // Reload suggestions to include new data
       await loadSuggestions();
-      await loadCalls();
+      await loadCalls(); // Ensure sort/order
     } catch (error) {
       console.error('Error creating call:', error);
       alert('Erreur lors de la création de l\'appel');
+    }
+  };
+
+  const handleQuickSubmit = async (formData) => {
+    try {
+      await handleCreateCall({
+        ...formData,
+        isGlpi: false,
+        glpiNumber: null
+      });
+      setShowQuickForm(false);
+      // Refresh quick suggestions potentially
+      loadQuickSuggestions();
+    } catch (error) {
+      console.error('Error quick creating call:', error);
     }
   };
 
@@ -143,9 +138,8 @@ function Dashboard() {
     try {
       const response = await callService.updateCall(id, updates);
       setCalls(calls.map(call => call.id === id ? response.data : call));
-      setEditingCall(null);
 
-      // Reload suggestions pour mettre à jour l'autocomplétion
+      // Reload suggestions
       await loadSuggestions();
     } catch (error) {
       console.error('Error updating call:', error);
@@ -178,947 +172,54 @@ function Dashboard() {
     }
   };
 
-  const addTag = (tag) => {
-    if (tag && !formData.tags.includes(tag)) {
-      setFormData({ ...formData, tags: [...formData.tags, tag] });
-    }
-    setCurrentTag('');
-    setShowTagSuggestions(false);
-  };
-
-  const removeTag = (tagToRemove) => {
-    setFormData({
-      ...formData,
-      tags: formData.tags.filter(tag => tag !== tagToRemove)
-    });
-  };
-
-  // Quick form functions
-  const loadQuickSuggestions = async () => {
-    try {
-      const response = await callService.getQuickSuggestions();
-      setQuickSuggestions(response.data);
-    } catch (error) {
-      console.error('Error loading quick suggestions:', error);
-    }
-  };
-
-  const handleQuickSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!quickFormData.caller.trim()) {
-      alert('L\'appelant est obligatoire');
-      return;
-    }
-
-    try {
-      await callService.createCall({
-        caller: quickFormData.caller.trim(),
-        reason: quickFormData.reason.trim() || null,
-        tags: quickFormData.tags,
-        isGlpi: false,
-        glpiNumber: null,
-        isBlocking: quickFormData.isBlocking
-      });
-
-      // Réinitialiser le formulaire rapide
-      setQuickFormData({
-        caller: '',
-        reason: '',
-        tags: [],
-        isBlocking: false
-      });
-      setShowQuickForm(false);
-
-      // Recharger les appels et suggestions
-      loadCalls();
-      loadSuggestions();
-      loadQuickSuggestions();
-    } catch (error) {
-      console.error('Error creating quick call:', error);
-      alert('Erreur lors de la création de l\'appel');
-    }
-  };
-
-  const addQuickTag = (tag) => {
-    if (tag && !quickFormData.tags.includes(tag)) {
-      setQuickFormData({ ...quickFormData, tags: [...quickFormData.tags, tag] });
-    }
-  };
-
-  const removeQuickTag = (tagToRemove) => {
-    setQuickFormData({
-      ...quickFormData,
-      tags: quickFormData.tags.filter(tag => tag !== tagToRemove)
-    });
-  };
-
-  const handleDirectQuickAdd = async () => {
-    try {
-      const response = await callService.createCall({
-        caller: "Ajout_Rapide",
-        reason: "Ajout_Rapide",
-        tags: ["Ajout_Rapide"],
-        isBlocking: false
-      });
-
-      setCalls([response.data, ...calls]);
-
-      // Rafraîchir les suggestions
-      loadSuggestions();
-      loadQuickSuggestions();
-    } catch (error) {
-      console.error('Error creating direct quick call:', error);
-      alert('Erreur lors de la création de l\'appel rapide');
-    }
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getDayName = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', { weekday: 'long' });
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navbar
+        user={user}
+        authService={authService}
+        tenants={tenants}
+        selectedTenant={selectedTenant}
+        handleTenantChange={handleTenantChange}
+      />
+
       {/* Quick Add Modal */}
-      {showQuickForm && user?.role !== 'viewer' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Ajout Rapide</h2>
-              <button
-                onClick={() => setShowQuickForm(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-
-            <form onSubmit={handleQuickSubmit} className="space-y-4">
-              {/* Caller */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Appelant *
-                </label>
-                <select
-                  value={quickFormData.caller}
-                  onChange={(e) => setQuickFormData({ ...quickFormData, caller: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Sélectionner...</option>
-                  {quickSuggestions.callers.map((item, index) => {
-                    const name = typeof item === 'string' ? item : item.name;
-                    const count = typeof item === 'object' ? item.count : null;
-                    return (
-                      <option key={index} value={name}>
-                        {name}{count ? ` (${count} fois)` : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              {/* Reason */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Raison
-                </label>
-                <select
-                  value={quickFormData.reason}
-                  onChange={(e) => setQuickFormData({ ...quickFormData, reason: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Sélectionner...</option>
-                  {quickSuggestions.reasons.map((item, index) => {
-                    const name = typeof item === 'string' ? item : item.name;
-                    const count = typeof item === 'object' ? item.count : null;
-                    return (
-                      <option key={index} value={name}>
-                        {name}{count ? ` (${count} fois)` : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              {/* Tags */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tags
-                </label>
-                <select
-                  onChange={(e) => {
-                    addQuickTag(e.target.value);
-                    e.target.value = '';
-                  }}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Ajouter un tag...</option>
-                  {quickSuggestions.tags.map((item, index) => {
-                    const name = typeof item === 'string' ? item : item.name;
-                    const count = typeof item === 'object' ? item.count : null;
-                    return (
-                      <option key={index} value={name}>
-                        {name}{count ? ` (${count} fois)` : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {quickFormData.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeQuickTag(tag)}
-                        className="text-blue-600 hover:text-blue-800 font-bold"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Blocking */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="quickBlocking"
-                  checked={quickFormData.isBlocking}
-                  onChange={(e) => setQuickFormData({ ...quickFormData, isBlocking: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="quickBlocking" className="text-sm text-gray-700">
-                  Appel bloquant
-                </label>
-              </div>
-
-              {/* Submit */}
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 font-medium"
-                >
-                  Créer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowQuickForm(false)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 font-medium"
-                >
-                  Annuler
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-2xl font-bold text-gray-800 hover:text-blue-600"
-            >
-              ← CallFixV2
-            </button>
-            <span className="text-gray-300">|</span>
-            <span className="text-gray-600">Application</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/statistics')}
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-            >
-              Statistiques
-            </button>
-            <button
-              onClick={() => navigate('/archives')}
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-            >
-              Archives
-            </button>
-            {canSelectTenant && tenants.length > 0 && (
-              <select
-                value={selectedTenant || 'all'}
-                onChange={(e) => handleTenantChange(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">Tous les tenants</option>
-                {tenants.map(tenant => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {tenant.display_name}
-                  </option>
-                ))}
-              </select>
-            )}
-            {user?.role === 'global_admin' && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors"
-              >
-                Admin
-              </button>
-            )}
-            {user?.role === 'tenant_admin' && (
-              <button
-                onClick={() => navigate('/admin-tenant')}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium"
-              >
-                👥 Admin Tenant
-              </button>
-            )}
-            <span className="text-gray-300">|</span>
-            <span className="text-sm text-gray-600">
-              {user?.fullName || user?.username}
-            </span>
-            <button
-              onClick={() => authService.logout()}
-              className="btn btn-secondary text-sm"
-            >
-              Déconnexion
-            </button>
-          </div>
-        </div>
-      </nav>
+      <QuickAddModal
+        isOpen={showQuickForm}
+        onClose={() => setShowQuickForm(false)}
+        onSubmit={handleQuickSubmit}
+        suggestions={quickSuggestions}
+      />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Form - Hidden for viewers */}
+
+        {/* Main Form - Hidden for viewers */}
         {user?.role !== 'viewer' && (
-          <div className="card mb-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Nouvel Appel</h2>
+          <>
+            <div className="flex justify-end mb-4">
               <button
                 type="button"
-                onClick={handleDirectQuickAdd}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+                onClick={() => setShowQuickForm(true)}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 shadow-sm"
               >
-                Ajout Rapide
+                ⚡ Ajout Rapide
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Appelant */}
-                <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Appelant *
-                  </label>
-                  <input
-                    type="text"
-                    className="input"
-                    value={formData.caller}
-                    onChange={(e) => {
-                      setFormData({ ...formData, caller: e.target.value });
-                      setShowCallerSuggestions(true);
-                    }}
-                    onFocus={() => setShowCallerSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowCallerSuggestions(false), 200)}
-                    required
-                  />
-                  {showCallerSuggestions && callerSuggestions.length > 0 && formData.caller && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      {callerSuggestions
-                        .filter(s => s.toLowerCase().includes(formData.caller.toLowerCase()))
-                        .map((suggestion, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            className="w-full text-left px-3 py-2 hover:bg-gray-100"
-                            onClick={() => {
-                              setFormData({ ...formData, caller: suggestion });
-                              setShowCallerSuggestions(false);
-                            }}
-                          >
-                            {suggestion}
-                          </button>
-                        ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Raison */}
-                {!formData.isGlpi && (
-                  <div className="relative">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Raison
-                    </label>
-                    <input
-                      type="text"
-                      className="input"
-                      value={formData.reason}
-                      onChange={(e) => {
-                        setFormData({ ...formData, reason: e.target.value });
-                        setShowReasonSuggestions(true);
-                      }}
-                      onFocus={() => setShowReasonSuggestions(true)}
-                      onBlur={() => setTimeout(() => setShowReasonSuggestions(false), 200)}
-                    />
-                    {showReasonSuggestions && reasonSuggestions.length > 0 && formData.reason && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {reasonSuggestions
-                          .filter(s => s.toLowerCase().includes(formData.reason.toLowerCase()))
-                          .map((suggestion, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100"
-                              onClick={() => {
-                                setFormData({ ...formData, reason: suggestion });
-                                setShowReasonSuggestions(false);
-                              }}
-                            >
-                              {suggestion}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Tags */}
-              {!formData.isGlpi && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tags
-                  </label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {formData.tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeTag(tag)}
-                          className="hover:text-blue-600"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      className="input"
-                      value={currentTag}
-                      onChange={(e) => {
-                        setCurrentTag(e.target.value);
-                        setShowTagSuggestions(true);
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addTag(currentTag);
-                        }
-                      }}
-                      onFocus={() => setShowTagSuggestions(true)}
-                      onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
-                      placeholder="Ajouter un tag..."
-                    />
-                    {showTagSuggestions && tagSuggestions.length > 0 && currentTag && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {tagSuggestions
-                          .filter(s => s.toLowerCase().includes(currentTag.toLowerCase()))
-                          .map((suggestion, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100"
-                              onClick={() => addTag(suggestion)}
-                            >
-                              {suggestion}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Checkboxes */}
-              <div className="flex flex-wrap gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.isGlpi}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      isGlpi: e.target.checked,
-                      reason: e.target.checked ? '' : formData.reason,
-                      tags: e.target.checked ? [] : formData.tags
-                    })}
-                    className="w-5 h-5"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Ticket GLPI</span>
-                </label>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.isBlocking}
-                    onChange={(e) => setFormData({ ...formData, isBlocking: e.target.checked })}
-                    className="w-5 h-5"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Bloquant</span>
-                </label>
-              </div>
-
-              {formData.isGlpi && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Numéro GLPI
-                  </label>
-                  <input
-                    type="text"
-                    className="input"
-                    value={formData.glpiNumber}
-                    onChange={(e) => setFormData({ ...formData, glpiNumber: e.target.value })}
-                    placeholder="Ex: GLPI-12345"
-                  />
-                </div>
-              )}
-
-              <button type="submit" className="btn btn-primary">
-                Enregistrer l'appel
-              </button>
-            </form>
-          </div>
+            <CallForm
+              onSubmit={handleCreateCall}
+              suggestions={suggestions}
+              userRole={user?.role}
+            />
+          </>
         )}
 
-        {/* Liste des appels */}
-        <div className="card">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Appels d'aujourd'hui ({calls.length})
-            </h2>
-            <button
-              onClick={() => navigate('/archives')}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
-              📦 Voir les appels précédents
-            </button>
-          </div>
-
-          {loading ? (
-            <p className="text-gray-600">Chargement...</p>
-          ) : calls.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-600 mb-2">Aucun appel aujourd'hui</p>
-              <p className="text-sm text-gray-500">
-                Les appels des jours précédents sont dans les{' '}
-                <button
-                  onClick={() => navigate('/archives')}
-                  className="text-blue-600 hover:underline font-medium"
-                >
-                  Archives
-                </button>
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {calls.map((call) => (
-                <CallItem
-                  key={call.id}
-                  call={call}
-                  isEditing={editingCall === call.id}
-                  onEdit={() => setEditingCall(call.id)}
-                  onCancel={() => setEditingCall(null)}
-                  onSave={(updates) => handleUpdate(call.id, updates)}
-                  onDelete={() => handleDelete(call.id)}
-                  onArchive={() => handleArchive(call.id)}
-                  formatDate={formatDate}
-                  getDayName={getDayName}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Composant pour un appel
-function CallItem({ call, isEditing, onEdit, onCancel, onSave, onDelete, onArchive, formatDate, getDayName }) {
-  // Parser les tags correctement dès l'initialisation
-  const initialTags = (call.tags && Array.isArray(call.tags))
-    ? call.tags.filter(t => t && t.name).map(t => t.name)
-    : [];
-
-  const [editData, setEditData] = useState({
-    caller: call.caller_name,
-    reason: call.reason_name || '',
-    tags: initialTags,
-    isGlpi: call.is_glpi,
-    glpiNumber: call.glpi_number || '',
-    isBlocking: call.is_blocking,
-    createdAt: call.created_at
-  });
-
-  const [callerSuggestions, setCallerSuggestions] = useState([]);
-  const [reasonSuggestions, setReasonSuggestions] = useState([]);
-  const [tagSuggestions, setTagSuggestions] = useState([]);
-  const [showCallerSuggestions, setShowCallerSuggestions] = useState(false);
-  const [showReasonSuggestions, setShowReasonSuggestions] = useState(false);
-  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
-  const [currentTag, setCurrentTag] = useState('');
-
-  // Réinitialiser editData quand on passe en mode édition
-  useEffect(() => {
-    if (isEditing) {
-      // Parser les tags correctement
-      let parsedTags = [];
-      if (call.tags && Array.isArray(call.tags)) {
-        parsedTags = call.tags
-          .filter(t => t && (typeof t === 'string' ? t : t.name)) // Support string ou objet
-          .map(t => typeof t === 'string' ? t : t.name);
-      }
-
-      setEditData({
-        caller: call.caller_name,
-        reason: call.reason_name || '',
-        tags: parsedTags,
-        isGlpi: call.is_glpi,
-        glpiNumber: call.glpi_number || '',
-        isBlocking: call.is_blocking,
-        createdAt: call.created_at
-      });
-      loadSuggestions();
-    }
-  }, [isEditing]);
-
-  const loadSuggestions = async () => {
-    try {
-      const [callers, reasons, tags] = await Promise.all([
-        callService.getSuggestions('callers'),
-        callService.getSuggestions('reasons'),
-        callService.getSuggestions('tags')
-      ]);
-      setCallerSuggestions(callers.data);
-      setReasonSuggestions(reasons.data);
-      setTagSuggestions(tags.data);
-    } catch (error) {
-      console.error('Error loading suggestions:', error);
-    }
-  };
-
-  const addTag = (tag) => {
-    if (tag && !editData.tags.includes(tag)) {
-      setEditData({ ...editData, tags: [...editData.tags, tag] });
-    }
-    setCurrentTag('');
-    setShowTagSuggestions(false);
-  };
-
-  const removeTag = (tagToRemove) => {
-    setEditData({
-      ...editData,
-      tags: editData.tags.filter(tag => tag !== tagToRemove)
-    });
-  };
-
-  if (isEditing) {
-    return (
-      <div className="border border-gray-300 rounded-lg p-4 bg-blue-50">
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date/Heure</label>
-            <input
-              type="datetime-local"
-              className="input text-sm"
-              value={new Date(editData.createdAt).toISOString().slice(0, 16)}
-              onChange={(e) => setEditData({ ...editData, createdAt: e.target.value })}
-            />
-          </div>
-
-          {/* Appelant avec autocomplétion */}
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Appelant</label>
-            <input
-              type="text"
-              className="input text-sm"
-              value={editData.caller}
-              onChange={(e) => {
-                setEditData({ ...editData, caller: e.target.value });
-                setShowCallerSuggestions(true);
-              }}
-              onFocus={() => setShowCallerSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowCallerSuggestions(false), 200)}
-            />
-            {showCallerSuggestions && callerSuggestions.length > 0 && editData.caller && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                {callerSuggestions
-                  .filter(s => s.toLowerCase().includes(editData.caller.toLowerCase()))
-                  .map((suggestion, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-                      onClick={() => {
-                        setEditData({ ...editData, caller: suggestion });
-                        setShowCallerSuggestions(false);
-                      }}
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-              </div>
-            )}
-          </div>
-
-          {/* Raison avec autocomplétion */}
-          {!editData.isGlpi && (
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Raison</label>
-              <input
-                type="text"
-                className="input text-sm"
-                value={editData.reason}
-                onChange={(e) => {
-                  setEditData({ ...editData, reason: e.target.value });
-                  setShowReasonSuggestions(true);
-                }}
-                onFocus={() => setShowReasonSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowReasonSuggestions(false), 200)}
-              />
-              {showReasonSuggestions && reasonSuggestions.length > 0 && editData.reason && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                  {reasonSuggestions
-                    .filter(s => s.toLowerCase().includes(editData.reason.toLowerCase()))
-                    .map((suggestion, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-                        onClick={() => {
-                          setEditData({ ...editData, reason: suggestion });
-                          setShowReasonSuggestions(false);
-                        }}
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Tags avec autocomplétion */}
-          {!editData.isGlpi && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tags {editData.tags.length > 0 && `(${editData.tags.length})`}
-              </label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {editData.tags && editData.tags.length > 0 ? (
-                  editData.tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="hover:text-blue-600"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-xs text-gray-400">Aucun tag</span>
-                )}
-              </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  className="input text-sm"
-                  value={currentTag}
-                  onChange={(e) => {
-                    setCurrentTag(e.target.value);
-                    setShowTagSuggestions(true);
-                  }}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addTag(currentTag);
-                    }
-                  }}
-                  onFocus={() => setShowTagSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
-                  placeholder="Ajouter un tag..."
-                />
-                {showTagSuggestions && tagSuggestions.length > 0 && currentTag && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                    {tagSuggestions
-                      .filter(s => s.toLowerCase().includes(currentTag.toLowerCase()))
-                      .map((suggestion, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-                          onClick={() => addTag(suggestion)}
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Checkboxes */}
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={editData.isGlpi}
-                onChange={(e) => setEditData({
-                  ...editData,
-                  isGlpi: e.target.checked,
-                  reason: e.target.checked ? '' : editData.reason,
-                  tags: e.target.checked ? [] : editData.tags
-                })}
-                className="w-4 h-4"
-              />
-              <span className="text-sm font-medium text-gray-700">Ticket GLPI</span>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={editData.isBlocking}
-                onChange={(e) => setEditData({ ...editData, isBlocking: e.target.checked })}
-                className="w-4 h-4"
-              />
-              <span className="text-sm font-medium text-gray-700">Bloquant</span>
-            </label>
-          </div>
-
-          {editData.isGlpi && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Numéro GLPI
-              </label>
-              <input
-                type="text"
-                className="input text-sm"
-                value={editData.glpiNumber}
-                onChange={(e) => setEditData({ ...editData, glpiNumber: e.target.value })}
-                placeholder="Ex: GLPI-12345"
-              />
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => onSave(editData)}
-              className="btn btn-primary text-sm"
-            >
-              Enregistrer
-            </button>
-            <button
-              onClick={onCancel}
-              className="btn btn-secondary text-sm"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-sm font-medium text-gray-500">
-              {formatDate(call.created_at)}
-            </span>
-            <span className="text-sm text-gray-400">•</span>
-            <span className="text-sm text-gray-500 capitalize">
-              {getDayName(call.created_at)}
-            </span>
-            {call.is_blocking && (
-              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                Bloquant
-              </span>
-            )}
-            {call.is_glpi && (
-              <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                GLPI {call.glpi_number && `- ${call.glpi_number}`}
-              </span>
-            )}
-          </div>
-          <p className="text-lg font-semibold text-gray-800 mb-1">
-            {call.caller_name}
-          </p>
-          {call.reason_name && (
-            <p className="text-gray-600 mb-2">{call.reason_name}</p>
-          )}
-          {call.tags && Array.isArray(call.tags) && call.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {call.tags
-                .filter(t => t && (typeof t === 'string' ? t : t.name))
-                .map((tag, idx) => (
-                  <span
-                    key={idx}
-                    className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                  >
-                    {typeof tag === 'string' ? tag : tag.name}
-                  </span>
-                ))}
-            </div>
-          )}
-        </div>
-        {authService.getCurrentUser()?.role !== 'viewer' && (
-          <div className="flex gap-2">
-            <button
-              onClick={onEdit}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
-              Modifier
-            </button>
-            <button
-              onClick={onArchive}
-              className="text-orange-600 hover:text-orange-800 text-sm font-medium"
-            >
-              📦 Archiver
-            </button>
-            <button
-              onClick={onDelete}
-              className="text-red-600 hover:text-red-800 text-sm font-medium"
-            >
-              Supprimer
-            </button>
-          </div>
-        )}
+        {/* Call List */}
+        <CallList
+          calls={calls}
+          loading={loading}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+          onArchive={handleArchive}
+        />
       </div>
     </div>
   );
