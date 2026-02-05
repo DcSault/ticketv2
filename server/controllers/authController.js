@@ -1,6 +1,7 @@
-const pool = require('../config/database');
+﻿const pool = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 
 // Login
 exports.login = async (req, res) => {
@@ -19,9 +20,9 @@ exports.login = async (req, res) => {
 
     const user = result.rows[0];
 
-    // Si l'utilisateur a le flag no_password_login, ne pas vérifier le mot de passe
+    // Si l'utilisateur a le flag no_password_login, ne pas vÃ©rifier le mot de passe
     if (!user.no_password_login) {
-      // Vérifier le mot de passe uniquement si no_password_login est false
+      // VÃ©rifier le mot de passe uniquement si no_password_login est false
       if (!password) {
         return res.status(401).json({ error: 'Password required' });
       }
@@ -31,7 +32,7 @@ exports.login = async (req, res) => {
       }
     }
 
-    // Créer le token JWT
+    // CrÃ©er le token JWT
     const token = jwt.sign(
       {
         id: user.id,
@@ -56,7 +57,7 @@ exports.login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -83,17 +84,17 @@ exports.getCurrentUser = async (req, res) => {
       tenantName: user.tenant_name
     });
   } catch (error) {
-    console.error('Get user error:', error);
+    logger.error('Get user error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
-// Logout (côté client principalement)
+// Logout (cÃ´tÃ© client principalement)
 exports.logout = (req, res) => {
   res.json({ message: 'Logged out successfully' });
 };
 
-// Vérifier si un utilisateur nécessite un mot de passe
+// VÃ©rifier si un utilisateur nÃ©cessite un mot de passe
 exports.checkUserPasswordRequired = async (req, res) => {
   const { username } = req.params;
 
@@ -113,7 +114,7 @@ exports.checkUserPasswordRequired = async (req, res) => {
       passwordRequired: !user.no_password_login 
     });
   } catch (error) {
-    console.error('Check user error:', error);
+    logger.error('Check user error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };

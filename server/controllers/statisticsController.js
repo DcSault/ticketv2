@@ -1,4 +1,5 @@
-const pool = require('../config/database');
+﻿const pool = require('../config/database');
+const logger = require('../utils/logger');
 
 // Obtenir les statistiques
 exports.getStatistics = async (req, res) => {
@@ -13,7 +14,7 @@ exports.getStatistics = async (req, res) => {
     let tenantFilter = '';
     const params = [];
 
-    // Gérer le filtre tenant
+    // GÃ©rer le filtre tenant
     if (tenantId && tenantId !== 'all') {
       tenantFilter = 'WHERE tenant_id = $1';
       params.push(tenantId);
@@ -22,11 +23,11 @@ exports.getStatistics = async (req, res) => {
     }
 
     if (startDate && endDate) {
-      // Utiliser >= et < pour inclure toute la journée de fin
+      // Utiliser >= et < pour inclure toute la journÃ©e de fin
       dateFilter = `AND created_at >= $${params.length + 1}::date AND created_at < ($${params.length + 2}::date + INTERVAL '1 day')`;
       params.push(startDate, endDate);
     } else if (startDate) {
-      // Seulement date de début
+      // Seulement date de dÃ©but
       dateFilter = `AND created_at >= $${params.length + 1}::date`;
       params.push(startDate);
     } else if (endDate) {
@@ -34,7 +35,7 @@ exports.getStatistics = async (req, res) => {
       dateFilter = `AND created_at < ($${params.length + 1}::date + INTERVAL '1 day')`;
       params.push(endDate);
     } else {
-      // Calculer la date de début selon la période
+      // Calculer la date de dÃ©but selon la pÃ©riode
       switch (period) {
         case 'day':
           dateFilter = "AND created_at >= CURRENT_DATE";
@@ -51,25 +52,25 @@ exports.getStatistics = async (req, res) => {
       }
     }
 
-    // Total d'appels (incluant les archivés)
+    // Total d'appels (incluant les archivÃ©s)
     const totalResult = await pool.query(
       `SELECT COUNT(*) as total FROM calls ${tenantFilter} ${dateFilter}`,
       params
     );
 
-    // Appels bloquants (incluant les archivés)
+    // Appels bloquants (incluant les archivÃ©s)
     const blockingResult = await pool.query(
       `SELECT COUNT(*) as total FROM calls ${tenantFilter} ${dateFilter} AND is_blocking = true`,
       params
     );
 
-    // Tickets GLPI (incluant les archivés)
+    // Tickets GLPI (incluant les archivÃ©s)
     const glpiResult = await pool.query(
       `SELECT COUNT(*) as total FROM calls ${tenantFilter} ${dateFilter} AND is_glpi = true`,
       params
     );
 
-    // Top appelants (incluant les archivés)
+    // Top appelants (incluant les archivÃ©s)
     const topCallersResult = await pool.query(
       `SELECT caller_name, COUNT(*) as count
        FROM calls
@@ -80,7 +81,7 @@ exports.getStatistics = async (req, res) => {
       params
     );
 
-    // Top raisons (incluant les archivés)
+    // Top raisons (incluant les archivÃ©s)
     const topReasonsResult = await pool.query(
       `SELECT reason_name, COUNT(*) as count
        FROM calls
@@ -91,7 +92,7 @@ exports.getStatistics = async (req, res) => {
       params
     );
 
-    // Top tags (incluant les archivés)
+    // Top tags (incluant les archivÃ©s)
     let topTagsQuery, topTagsParams;
     if (tenantId && tenantId !== 'all') {
       topTagsQuery = `SELECT t.name, COUNT(*) as count
@@ -112,14 +113,14 @@ exports.getStatistics = async (req, res) => {
        GROUP BY t.name
        ORDER BY count DESC
        LIMIT 10`;
-      topTagsParams = params.slice(1); // Enlever le premier param si c'était tenantId
+      topTagsParams = params.slice(1); // Enlever le premier param si c'Ã©tait tenantId
     }
     const topTagsResult = await pool.query(topTagsQuery, topTagsParams);
 
-    // Appels par jour OU par mois (pour les graphiques, incluant les archivés)
+    // Appels par jour OU par mois (pour les graphiques, incluant les archivÃ©s)
     let callsByDayResult;
     if (period === 'year' && !startDate) {
-      // Pour l'année, grouper par mois
+      // Pour l'annÃ©e, grouper par mois
       callsByDayResult = await pool.query(
         `SELECT 
           TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') as date,
@@ -131,7 +132,7 @@ exports.getStatistics = async (req, res) => {
         params
       );
     } else if (period === 'week' && !startDate && !endDate) {
-      // Pour la semaine, générer tous les jours même sans appels
+      // Pour la semaine, gÃ©nÃ©rer tous les jours mÃªme sans appels
       let weekQuery, weekParams;
       if (tenantId && tenantId !== 'all') {
         weekQuery = `WITH week_days AS (
@@ -168,7 +169,7 @@ exports.getStatistics = async (req, res) => {
       }
       callsByDayResult = await pool.query(weekQuery, weekParams);
     } else {
-      // Pour les autres périodes, grouper par jour
+      // Pour les autres pÃ©riodes, grouper par jour
       callsByDayResult = await pool.query(
         `SELECT DATE(created_at) as date, COUNT(*) as count
          FROM calls
@@ -180,7 +181,7 @@ exports.getStatistics = async (req, res) => {
       );
     }
 
-    // Ratio matin/après-midi (matin = 7h30-12h, après-midi = 13h30-17h30)
+    // Ratio matin/aprÃ¨s-midi (matin = 7h30-12h, aprÃ¨s-midi = 13h30-17h30)
     const timeRatioResult = await pool.query(
       `SELECT 
         COUNT(CASE WHEN EXTRACT(HOUR FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) * 60 + EXTRACT(MINUTE FROM (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris')) >= 450 
@@ -192,13 +193,13 @@ exports.getStatistics = async (req, res) => {
       params
     );
 
-    // Appels par heure (pour aujourd'hui ou pour un jour spécifique)
-    // Note: Les timestamps sont en UTC, conversion automatique en Europe/Paris (gère été/hiver automatiquement)
+    // Appels par heure (pour aujourd'hui ou pour un jour spÃ©cifique)
+    // Note: Les timestamps sont en UTC, conversion automatique en Europe/Paris (gÃ¨re Ã©tÃ©/hiver automatiquement)
     let callsByHourResult = null;
-    const timezone = 'Europe/Paris'; // Changement d'heure automatique (UTC+1 en hiver, UTC+2 en été)
+    const timezone = 'Europe/Paris'; // Changement d'heure automatique (UTC+1 en hiver, UTC+2 en Ã©tÃ©)
     
     if (period === 'day' && !startDate && !endDate) {
-      // Aujourd'hui - afficher de la première heure avec appels jusqu'à l'heure actuelle (en heure locale)
+      // Aujourd'hui - afficher de la premiÃ¨re heure avec appels jusqu'Ã  l'heure actuelle (en heure locale)
       let hourQuery, hourParams;
       if (tenantId && tenantId !== 'all') {
         hourQuery = `WITH hour_range AS (
@@ -252,7 +253,7 @@ exports.getStatistics = async (req, res) => {
       }
       callsByHourResult = await pool.query(hourQuery, hourParams);
     } else if (startDate && endDate && startDate === endDate) {
-      // Un jour spécifique (comme Hier) - afficher de la première à la dernière heure avec appels (en heure locale)
+      // Un jour spÃ©cifique (comme Hier) - afficher de la premiÃ¨re Ã  la derniÃ¨re heure avec appels (en heure locale)
       let dayHourQuery, dayHourParams;
       if (tenantId && tenantId !== 'all') {
         dayHourQuery = `WITH hour_range AS (
@@ -305,7 +306,7 @@ exports.getStatistics = async (req, res) => {
       callsByHourResult = await pool.query(dayHourQuery, dayHourParams);
     }
 
-    // Calculer l'heure la plus active pour TOUTES les périodes
+    // Calculer l'heure la plus active pour TOUTES les pÃ©riodes
     let mostActiveHourResult = null;
     if (tenantId && tenantId !== 'all') {
       mostActiveHourResult = await pool.query(
@@ -353,12 +354,12 @@ exports.getStatistics = async (req, res) => {
         : null
     });
   } catch (error) {
-    console.error('Get statistics error:', error);
+    logger.error('Get statistics error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
-// Exporter les données
+// Exporter les donnÃ©es
 exports.exportData = async (req, res) => {
   const { startDate, endDate } = req.query;
   // Viewer multi-tenant peut choisir, viewer avec tenant_id ne peut voir que son tenant
@@ -414,7 +415,7 @@ exports.exportData = async (req, res) => {
 
     const result = await pool.query(query, params);
 
-    // Nettoyer les données pour l'export
+    // Nettoyer les donnÃ©es pour l'export
     const exportData = result.rows.map(row => ({
       ...row,
       tags: row.tags || []
@@ -422,7 +423,7 @@ exports.exportData = async (req, res) => {
 
     res.json(exportData);
   } catch (error) {
-    console.error('Export data error:', error);
+    logger.error('Export data error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };

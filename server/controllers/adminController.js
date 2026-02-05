@@ -1,5 +1,6 @@
-const pool = require('../config/database');
+﻿const pool = require('../config/database');
 const bcrypt = require('bcryptjs');
+const logger = require('../utils/logger');
 
 // Obtenir tous les tenants
 exports.getTenants = async (req, res) => {
@@ -19,7 +20,7 @@ exports.getTenants = async (req, res) => {
     
     const params = [];
     
-    // Seuls les tenant_admin sont restreints à leur tenant
+    // Seuls les tenant_admin sont restreints Ã  leur tenant
     if (userRole === 'tenant_admin') {
       query += ' WHERE t.id = $1';
       params.push(userTenantId);
@@ -31,12 +32,12 @@ exports.getTenants = async (req, res) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error('Get tenants error:', error);
+    logger.info('Get tenants error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
-// Créer un tenant
+// CrÃ©er un tenant
 exports.createTenant = async (req, res) => {
   const { name, displayName } = req.body;
 
@@ -55,12 +56,12 @@ exports.createTenant = async (req, res) => {
     if (error.code === '23505') { // Unique violation
       return res.status(409).json({ error: 'Tenant already exists' });
     }
-    console.error('Create tenant error:', error);
+    logger.info('Create tenant error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
-// Mettre à jour un tenant
+// Mettre Ã  jour un tenant
 exports.updateTenant = async (req, res) => {
   const { id } = req.params;
   const { displayName } = req.body;
@@ -77,7 +78,7 @@ exports.updateTenant = async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Update tenant error:', error);
+    logger.info('Update tenant error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -98,7 +99,7 @@ exports.deleteTenant = async (req, res) => {
 
     res.json({ message: 'Tenant deleted successfully' });
   } catch (error) {
-    console.error('Delete tenant error:', error);
+    logger.info('Delete tenant error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -142,12 +143,12 @@ exports.getUsers = async (req, res) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error('Get users error:', error);
+    logger.info('Get users error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
-// Créer un utilisateur
+// CrÃ©er un utilisateur
 exports.createUser = async (req, res) => {
   const { username, password, fullName, role, tenantId, noPasswordLogin } = req.body;
   const userRole = req.user.role;
@@ -165,35 +166,35 @@ exports.createUser = async (req, res) => {
     return res.status(400).json({ error: 'Invalid role' });
   }
 
-  // tenant_admin ne peut pas créer de global_admin
+  // tenant_admin ne peut pas crÃ©er de global_admin
   if (userRole === 'tenant_admin' && role === 'global_admin') {
     return res.status(403).json({ error: 'Tenant admin cannot create global admin' });
   }
 
-  // Déterminer le tenant_id selon le rôle créé
+  // DÃ©terminer le tenant_id selon le rÃ´le crÃ©Ã©
   let finalTenantId;
   if (role === 'global_admin') {
     // global_admin est toujours multi-tenant (tenant_id = NULL)
     finalTenantId = null;
   } else if (role === 'viewer') {
-    // viewer peut être multi-tenant (NULL) ou restreint à un tenant
+    // viewer peut Ãªtre multi-tenant (NULL) ou restreint Ã  un tenant
     if (userRole === 'tenant_admin') {
-      // tenant_admin peut créer des viewers pour leur propre tenant
+      // tenant_admin peut crÃ©er des viewers pour leur propre tenant
       finalTenantId = userTenantId;
     } else {
-      // global_admin peut choisir : NULL (tous) ou un tenant spécifique
+      // global_admin peut choisir : NULL (tous) ou un tenant spÃ©cifique
       finalTenantId = tenantId || null;
     }
   } else if (userRole === 'tenant_admin') {
-    // tenant_admin crée dans son propre tenant
+    // tenant_admin crÃ©e dans son propre tenant
     finalTenantId = userTenantId;
   } else {
-    // global_admin peut spécifier le tenant
+    // global_admin peut spÃ©cifier le tenant
     finalTenantId = tenantId || null;
   }
 
   try {
-    // Si noPasswordLogin est true, utiliser un mot de passe vide haché
+    // Si noPasswordLogin est true, utiliser un mot de passe vide hachÃ©
     const hashedPassword = noPasswordLogin 
       ? await bcrypt.hash('', 10) 
       : await bcrypt.hash(password, 10);
@@ -210,12 +211,12 @@ exports.createUser = async (req, res) => {
     if (error.code === '23505') { // Unique violation
       return res.status(409).json({ error: 'Username already exists' });
     }
-    console.error('Create user error:', error);
+    logger.info('Create user error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
-// Mettre à jour un utilisateur
+// Mettre Ã  jour un utilisateur
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
   const { fullName, role, tenantId, password } = req.body;
@@ -223,7 +224,7 @@ exports.updateUser = async (req, res) => {
   const userTenantId = req.user.tenantId;
 
   try {
-    // Vérifier que tenant_admin modifie seulement les users de son tenant
+    // VÃ©rifier que tenant_admin modifie seulement les users de son tenant
     if (userRole === 'tenant_admin') {
       const checkUser = await pool.query('SELECT tenant_id, role FROM users WHERE id = $1', [id]);
       if (checkUser.rows.length === 0) {
@@ -265,7 +266,7 @@ exports.updateUser = async (req, res) => {
       params.push(role);
       paramCount++;
       
-      // Si on change le rôle vers global_admin, mettre tenant_id à NULL
+      // Si on change le rÃ´le vers global_admin, mettre tenant_id Ã  NULL
       if (role === 'global_admin') {
         updates.push(`tenant_id = $${paramCount}`);
         params.push(null);
@@ -273,7 +274,7 @@ exports.updateUser = async (req, res) => {
       }
     }
 
-    // Gérer le tenant_id (sauf pour global_admin qui est toujours NULL)
+    // GÃ©rer le tenant_id (sauf pour global_admin qui est toujours NULL)
     if (tenantId !== undefined && userRole === 'global_admin' && role !== 'global_admin') {
       updates.push(`tenant_id = $${paramCount}`);
       params.push(tenantId || null);
@@ -317,7 +318,7 @@ exports.updateUser = async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Update user error:', error);
+    logger.info('Update user error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -328,12 +329,12 @@ exports.deleteUser = async (req, res) => {
   const userRole = req.user.role;
   const userTenantId = req.user.tenantId;
 
-  // Empêcher la suppression de l'admin par défaut
+  // EmpÃªcher la suppression de l'admin par dÃ©faut
   if (parseInt(id) === 1) {
     return res.status(403).json({ error: 'Cannot delete default admin user' });
   }
 
-  // Vérifier que tenant_admin supprime seulement les users de son tenant
+  // VÃ©rifier que tenant_admin supprime seulement les users de son tenant
   if (userRole === 'tenant_admin') {
     const checkUser = await pool.query('SELECT tenant_id, role FROM users WHERE id = $1', [id]);
     if (checkUser.rows.length === 0) {
@@ -364,7 +365,7 @@ exports.deleteUser = async (req, res) => {
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Delete user error:', error);
+    logger.info('Delete user error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -384,12 +385,12 @@ exports.getGlobalStatistics = async (req, res) => {
       ORDER BY call_count DESC
     `);
 
-    // Total général
+    // Total gÃ©nÃ©ral
     const totalCalls = await pool.query('SELECT COUNT(*) as total FROM calls WHERE is_archived = false');
     const totalUsers = await pool.query('SELECT COUNT(*) as total FROM users');
     const totalTenants = await pool.query('SELECT COUNT(*) as total FROM tenants');
 
-    // Appels récents tous tenants
+    // Appels rÃ©cents tous tenants
     const recentCalls = await pool.query(`
       SELECT 
         c.*,
@@ -413,7 +414,7 @@ exports.getGlobalStatistics = async (req, res) => {
       recentCalls: recentCalls.rows
     });
   } catch (error) {
-    console.error('Get global statistics error:', error);
+    logger.info('Get global statistics error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -432,7 +433,7 @@ exports.importCalls = async (req, res) => {
   }
 
   try {
-    // Vérifier que le tenant existe
+    // VÃ©rifier que le tenant existe
     const tenantCheck = await pool.query('SELECT id FROM tenants WHERE id = $1', [tenantId]);
     if (tenantCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Tenant not found' });
@@ -442,14 +443,14 @@ exports.importCalls = async (req, res) => {
     const fileContent = req.file.buffer.toString('utf-8');
     let jsonData = JSON.parse(fileContent);
 
-    // Détecter et convertir l'ancien format (v2.0.7)
+    // DÃ©tecter et convertir l'ancien format (v2.0.7)
     let calls = [];
     if (jsonData.metadata && jsonData.data && jsonData.data.tickets) {
       // Format ancien: {metadata: {...}, data: {tickets: [...], users: [...], ...}}
-      console.log(`Ancien format détecté (v${jsonData.metadata.version || 'inconnue'})`);
-      console.log(`${jsonData.data.tickets.length} tickets à convertir`);
+      logger.info(`Ancien format dÃ©tectÃ© (v${jsonData.metadata.version || 'inconnue'})`);
+      logger.info(`${jsonData.data.tickets.length} tickets Ã  convertir`);
       
-      // Convertir les tickets en calls (on garde les archivés aussi)
+      // Convertir les tickets en calls (on garde les archivÃ©s aussi)
       calls = jsonData.data.tickets.map(ticket => ({
         caller: ticket.caller,
         reason: ticket.reason || '',
@@ -465,7 +466,7 @@ exports.importCalls = async (req, res) => {
         createdAt: ticket.createdAt
       }));
       
-      console.log(`✅ ${calls.length} appels à importer (dont ${calls.filter(c => c.isArchived).length} archivés)`);
+      logger.info(`âœ… ${calls.length} appels Ã  importer (dont ${calls.filter(c => c.isArchived).length} archivÃ©s)`);
     } else if (Array.isArray(jsonData)) {
       // Format nouveau: [{caller: ..., reason: ..., ...}]
       calls = jsonData;
@@ -480,7 +481,7 @@ exports.importCalls = async (req, res) => {
     let duplicates = 0;
     const errors = [];
 
-    console.log(`📥 Début de l'import : ${calls.length} appels à traiter`);
+    logger.info(`ðŸ“¥ DÃ©but de l'import : ${calls.length} appels Ã  traiter`);
 
     // Importer chaque appel
     for (const call of calls) {
@@ -499,17 +500,17 @@ exports.importCalls = async (req, res) => {
         } = call;
 
         if (!caller) {
-          errors.push(`Appel ignoré : caller manquant`);
+          errors.push(`Appel ignorÃ© : caller manquant`);
           skipped++;
           continue;
         }
 
-        // Résoudre caller : soit un nom, soit un ID à résoudre
+        // RÃ©soudre caller : soit un nom, soit un ID Ã  rÃ©soudre
         let callerName = caller;
         let callerId = null;
         
         if (typeof caller === 'number' || !isNaN(caller)) {
-          // C'est un ID numérique - le résoudre
+          // C'est un ID numÃ©rique - le rÃ©soudre
           const callerResult = await pool.query(
             'SELECT id, name FROM callers WHERE id = $1 AND tenant_id = $2',
             [caller, tenantId]
@@ -518,12 +519,12 @@ exports.importCalls = async (req, res) => {
             callerId = callerResult.rows[0].id;
             callerName = callerResult.rows[0].name;
           } else {
-            errors.push(`Appel ignoré : caller_id ${caller} introuvable`);
+            errors.push(`Appel ignorÃ© : caller_id ${caller} introuvable`);
             skipped++;
             continue;
           }
         } else {
-          // C'est un nom - créer ou récupérer l'ID
+          // C'est un nom - crÃ©er ou rÃ©cupÃ©rer l'ID
           const callerResult = await pool.query(
             'SELECT id FROM callers WHERE name = $1 AND tenant_id = $2',
             [caller, tenantId]
@@ -539,13 +540,13 @@ exports.importCalls = async (req, res) => {
           }
         }
 
-        // Résoudre reason : soit un nom, soit un ID à résoudre
+        // RÃ©soudre reason : soit un nom, soit un ID Ã  rÃ©soudre
         let reasonName = reason || null;
         let reasonId = null;
         
         if (reason) {
           if (typeof reason === 'number' || !isNaN(reason)) {
-            // C'est un ID numérique - le résoudre
+            // C'est un ID numÃ©rique - le rÃ©soudre
             const reasonResult = await pool.query(
               'SELECT id, name FROM reasons WHERE id = $1 AND tenant_id = $2',
               [reason, tenantId]
@@ -555,7 +556,7 @@ exports.importCalls = async (req, res) => {
               reasonName = reasonResult.rows[0].name;
             }
           } else {
-            // C'est un nom - créer ou récupérer l'ID
+            // C'est un nom - crÃ©er ou rÃ©cupÃ©rer l'ID
             const reasonResult = await pool.query(
               'SELECT id FROM reasons WHERE name = $1 AND tenant_id = $2',
               [reason, tenantId]
@@ -572,8 +573,8 @@ exports.importCalls = async (req, res) => {
           }
         }
 
-        // Vérifier si l'appel existe déjà (doublon)
-        // Un doublon = même appelant + même date de création (à la seconde près)
+        // VÃ©rifier si l'appel existe dÃ©jÃ  (doublon)
+        // Un doublon = mÃªme appelant + mÃªme date de crÃ©ation (Ã  la seconde prÃ¨s)
         const duplicateCheck = await pool.query(
           `SELECT id FROM calls 
            WHERE tenant_id = $1 
@@ -583,13 +584,13 @@ exports.importCalls = async (req, res) => {
         );
 
         if (duplicateCheck.rows.length > 0) {
-          // Doublon détecté, on le saute
+          // Doublon dÃ©tectÃ©, on le saute
           duplicates++;
           skipped++;
           continue;
         }
 
-        // Créer l'appel (avec les champs d'archivage + IDs)
+        // CrÃ©er l'appel (avec les champs d'archivage + IDs)
         const callResult = await pool.query(
           `INSERT INTO calls (
             tenant_id, caller_id, caller_name, reason_id, reason_name, 
@@ -615,11 +616,11 @@ exports.importCalls = async (req, res) => {
 
         const callId = callResult.rows[0].id;
 
-        // Ajouter les tags si présents
+        // Ajouter les tags si prÃ©sents
         if (Array.isArray(tags) && tags.length > 0) {
           for (const tag of tags) {
             if (tag.name) {
-              // Créer ou récupérer le tag
+              // CrÃ©er ou rÃ©cupÃ©rer le tag
               let tagId;
               const existingTag = await pool.query(
                 'SELECT id FROM tags WHERE tenant_id = $1 AND name = $2',
@@ -636,7 +637,7 @@ exports.importCalls = async (req, res) => {
                 tagId = newTag.rows[0].id;
               }
 
-              // Associer le tag à l'appel
+              // Associer le tag Ã  l'appel
               await pool.query(
                 'INSERT INTO call_tags (call_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
                 [callId, tagId]
@@ -645,18 +646,18 @@ exports.importCalls = async (req, res) => {
           }
         }
 
-        // Note: Plus besoin d'ajouter aux tables d'autocomplétion
-        // car c'est déjà fait dans la logique de résolution ci-dessus
+        // Note: Plus besoin d'ajouter aux tables d'autocomplÃ©tion
+        // car c'est dÃ©jÃ  fait dans la logique de rÃ©solution ci-dessus
 
         imported++;
       } catch (error) {
-        console.error('Import call error:', error);
+        logger.info('Import call error:', error);
         errors.push(`Erreur pour l'appel "${call.caller || 'unknown'}": ${error.message}`);
         skipped++;
       }
     }
 
-    console.log(`✅ Import terminé : ${imported} importés, ${duplicates} doublons ignorés, ${skipped - duplicates} erreurs`);
+    logger.info(`âœ… Import terminÃ© : ${imported} importÃ©s, ${duplicates} doublons ignorÃ©s, ${skipped - duplicates} erreurs`);
 
     res.json({
       message: 'Import completed',
@@ -664,10 +665,10 @@ exports.importCalls = async (req, res) => {
       skipped,
       duplicates,
       total: calls.length,
-      errors: errors.length > 0 ? errors.slice(0, 10) : undefined // Limiter à 10 erreurs
+      errors: errors.length > 0 ? errors.slice(0, 10) : undefined // Limiter Ã  10 erreurs
     });
   } catch (error) {
-    console.error('Import calls error:', error);
+    logger.info('Import calls error:', error);
     if (error instanceof SyntaxError) {
       return res.status(400).json({ error: 'Invalid JSON format' });
     }
@@ -675,13 +676,13 @@ exports.importCalls = async (req, res) => {
   }
 };
 
-// Forcer l'archivage manuel des appels précédents
+// Forcer l'archivage manuel des appels prÃ©cÃ©dents
 exports.forceArchive = async (req, res) => {
   const userRole = req.user.role;
   const userTenantId = req.user.tenantId;
 
   try {
-    // Méthode simplifiée : archive tout ce qui a plus de 24h
+    // MÃ©thode simplifiÃ©e : archive tout ce qui a plus de 24h
     let query = `
       UPDATE calls 
       SET 
@@ -693,7 +694,7 @@ exports.forceArchive = async (req, res) => {
         AND created_at < (NOW() - INTERVAL '24 hours')
     `;
     
-    const params = [req.user.userId];
+    const params = [req.user.id];
     
     // tenant_admin ne peut archiver que les appels de son tenant
     if (userRole === 'tenant_admin') {
@@ -706,19 +707,19 @@ exports.forceArchive = async (req, res) => {
     const result = await pool.query(query, params);
     const count = result.rowCount;
 
-    console.log(`✅ Archivage manuel : ${count} appels archivés par ${req.user.username}`);
+    logger.info(`âœ… Archivage manuel : ${count} appels archivÃ©s par ${req.user.username}`);
     
     // Log des exemples
     if (result.rows.length > 0) {
-      console.log('  Exemples:', result.rows.slice(0, 3).map(r => 
+      logger.info('  Exemples:', result.rows.slice(0, 3).map(r => 
         `${r.caller_name} (${new Date(r.created_at).toLocaleString('fr-FR')})`
       ).join(', '));
     }
 
     res.json({
       message: count > 0 
-        ? `${count} appel(s) archivé(s) avec succès` 
-        : 'Aucun appel à archiver (tous récents ou déjà archivés)',
+        ? `${count} appel(s) archivÃ©(s) avec succÃ¨s` 
+        : 'Aucun appel Ã  archiver (tous rÃ©cents ou dÃ©jÃ  archivÃ©s)',
       count,
       examples: result.rows.slice(0, 5).map(r => ({
         id: r.id,
@@ -727,7 +728,7 @@ exports.forceArchive = async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Force archive error:', error);
+    logger.info('Force archive error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 };
@@ -768,12 +769,12 @@ exports.getStats = async (req, res) => {
       totalUsers: parseInt(stats.total_users) || 0
     });
   } catch (error) {
-    console.error('Get stats error:', error);
+    logger.info('Get stats error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 };
 
-// Exécuter une requête SQL (CLI)
+// ExÃ©cuter une requÃªte SQL (CLI)
 exports.executeSQL = async (req, res) => {
   const { query } = req.body;
   const userRole = req.user.role;
@@ -784,10 +785,10 @@ exports.executeSQL = async (req, res) => {
   }
 
   try {
-    // Nettoyer la requête
+    // Nettoyer la requÃªte
     const cleanQuery = query.trim();
 
-    // Sécurité basique : interdire certaines commandes dangereuses
+    // SÃ©curitÃ© basique : interdire certaines commandes dangereuses
     const forbidden = ['DROP', 'TRUNCATE', 'ALTER', 'CREATE DATABASE', 'DROP DATABASE'];
     const upperQuery = cleanQuery.toUpperCase();
     
@@ -795,27 +796,27 @@ exports.executeSQL = async (req, res) => {
       if (upperQuery.includes(cmd)) {
         return res.status(403).json({ 
           error: `Commande interdite : ${cmd}`,
-          details: 'Pour des raisons de sécurité, cette commande n\'est pas autorisée'
+          details: 'Pour des raisons de sÃ©curitÃ©, cette commande n\'est pas autorisÃ©e'
         });
       }
     }
 
     // Pour tenant_admin, on filtre automatiquement par tenant_id
-    // Note: C'est une sécurité basique, idéalement on devrait parser le SQL
+    // Note: C'est une sÃ©curitÃ© basique, idÃ©alement on devrait parser le SQL
     let finalQuery = cleanQuery;
     
     if (userRole === 'tenant_admin') {
-      // Si la requête ne contient pas déjà une condition WHERE avec tenant_id
+      // Si la requÃªte ne contient pas dÃ©jÃ  une condition WHERE avec tenant_id
       if (!upperQuery.includes('TENANT_ID')) {
-        // Ajouter un filtre basique (limitée - ne marche pas pour toutes les requêtes complexes)
-        console.warn(`⚠️ Requête CLI sans filtre tenant_id explicite: ${cleanQuery}`);
+        // Ajouter un filtre basique (limitÃ©e - ne marche pas pour toutes les requÃªtes complexes)
+        logger.info(`âš ï¸ RequÃªte CLI sans filtre tenant_id explicite: ${cleanQuery}`);
       }
     }
 
-    // Exécuter la requête
+    // ExÃ©cuter la requÃªte
     const result = await pool.query(finalQuery);
 
-    console.log(`✅ CLI SQL exécutée par ${req.user.username}: ${cleanQuery.substring(0, 100)}...`);
+    logger.info(`âœ… CLI SQL exÃ©cutÃ©e par ${req.user.username}: ${cleanQuery.substring(0, 100)}...`);
 
     res.json({
       command: result.command,
@@ -823,7 +824,7 @@ exports.executeSQL = async (req, res) => {
       rows: result.rows || []
     });
   } catch (error) {
-    console.error('Execute SQL error:', error);
+    logger.info('Execute SQL error:', error);
     res.status(400).json({ 
       error: 'Erreur SQL',
       details: error.message 

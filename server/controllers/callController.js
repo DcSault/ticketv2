@@ -523,4 +523,4 @@ exports.getQuickSuggestions = async (req, res) => {
     logger.error('Get quick suggestions error:', error);
     res.status(500).json({ error: 'Server error' });
   }
-};;
+};

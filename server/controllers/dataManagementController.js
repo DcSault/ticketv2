@@ -1,4 +1,5 @@
-const pool = require('../config/database');
+﻿const pool = require('../config/database');
+const logger = require('../utils/logger');
 
 // Obtenir tous les appelants avec leur usage
 exports.getCallers = async (req, res) => {
@@ -20,7 +21,7 @@ exports.getCallers = async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('Get callers error:', error);
+    logger.error('Get callers error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -45,7 +46,7 @@ exports.getReasons = async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('Get reasons error:', error);
+    logger.error('Get reasons error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -71,7 +72,7 @@ exports.getTags = async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('Get tags error:', error);
+    logger.error('Get tags error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -90,33 +91,33 @@ exports.updateCaller = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Vérifier que l'appelant appartient au tenant
+    // VÃ©rifier que l'appelant appartient au tenant
     const checkResult = await client.query(
       'SELECT id FROM callers WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
 
     if (checkResult.rows.length === 0) {
-      throw new Error('Appelant non trouvé');
+      throw new Error('Appelant non trouvÃ©');
     }
 
-    // Vérifier si le nouveau nom existe déjà
+    // VÃ©rifier si le nouveau nom existe dÃ©jÃ 
     const existingResult = await client.query(
       'SELECT id FROM callers WHERE name = $1 AND tenant_id = $2 AND id != $3',
       [name.trim(), tenantId, id]
     );
 
     if (existingResult.rows.length > 0) {
-      throw new Error('Ce nom existe déjà');
+      throw new Error('Ce nom existe dÃ©jÃ ');
     }
 
-    // Mettre à jour l'appelant
+    // Mettre Ã  jour l'appelant
     await client.query(
       'UPDATE callers SET name = $1 WHERE id = $2 AND tenant_id = $3',
       [name.trim(), id, tenantId]
     );
 
-    // Mettre à jour le nom dénormalisé dans les appels
+    // Mettre Ã  jour le nom dÃ©normalisÃ© dans les appels
     await client.query(
       'UPDATE calls SET caller_name = $1 WHERE caller_id = $2 AND tenant_id = $3',
       [name.trim(), id, tenantId]
@@ -126,8 +127,8 @@ exports.updateCaller = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Update caller error:', error);
-    res.status(400).json({ error: error.message || 'Erreur lors de la mise à jour' });
+    logger.error('Update caller error:', error);
+    res.status(400).json({ error: error.message || 'Erreur lors de la mise Ã  jour' });
   } finally {
     client.release();
   }
@@ -147,33 +148,33 @@ exports.updateReason = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Vérifier que la raison appartient au tenant
+    // VÃ©rifier que la raison appartient au tenant
     const checkResult = await client.query(
       'SELECT id FROM reasons WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
 
     if (checkResult.rows.length === 0) {
-      throw new Error('Raison non trouvée');
+      throw new Error('Raison non trouvÃ©e');
     }
 
-    // Vérifier si le nouveau nom existe déjà
+    // VÃ©rifier si le nouveau nom existe dÃ©jÃ 
     const existingResult = await client.query(
       'SELECT id FROM reasons WHERE name = $1 AND tenant_id = $2 AND id != $3',
       [name.trim(), tenantId, id]
     );
 
     if (existingResult.rows.length > 0) {
-      throw new Error('Ce nom existe déjà');
+      throw new Error('Ce nom existe dÃ©jÃ ');
     }
 
-    // Mettre à jour la raison
+    // Mettre Ã  jour la raison
     await client.query(
       'UPDATE reasons SET name = $1 WHERE id = $2 AND tenant_id = $3',
       [name.trim(), id, tenantId]
     );
 
-    // Mettre à jour le nom dénormalisé dans les appels
+    // Mettre Ã  jour le nom dÃ©normalisÃ© dans les appels
     await client.query(
       'UPDATE calls SET reason_name = $1 WHERE reason_id = $2 AND tenant_id = $3',
       [name.trim(), id, tenantId]
@@ -183,8 +184,8 @@ exports.updateReason = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Update reason error:', error);
-    res.status(400).json({ error: error.message || 'Erreur lors de la mise à jour' });
+    logger.error('Update reason error:', error);
+    res.status(400).json({ error: error.message || 'Erreur lors de la mise Ã  jour' });
   } finally {
     client.release();
   }
@@ -201,27 +202,27 @@ exports.updateTag = async (req, res) => {
   }
 
   try {
-    // Vérifier que le tag appartient au tenant
+    // VÃ©rifier que le tag appartient au tenant
     const checkResult = await pool.query(
       'SELECT id FROM tags WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
 
     if (checkResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Tag non trouvé' });
+      return res.status(404).json({ error: 'Tag non trouvÃ©' });
     }
 
-    // Vérifier si le nouveau nom existe déjà
+    // VÃ©rifier si le nouveau nom existe dÃ©jÃ 
     const existingResult = await pool.query(
       'SELECT id FROM tags WHERE name = $1 AND tenant_id = $2 AND id != $3',
       [name.trim(), tenantId, id]
     );
 
     if (existingResult.rows.length > 0) {
-      return res.status(400).json({ error: 'Ce nom existe déjà' });
+      return res.status(400).json({ error: 'Ce nom existe dÃ©jÃ ' });
     }
 
-    // Mettre à jour le tag
+    // Mettre Ã  jour le tag
     await pool.query(
       'UPDATE tags SET name = $1 WHERE id = $2 AND tenant_id = $3',
       [name.trim(), id, tenantId]
@@ -229,8 +230,8 @@ exports.updateTag = async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Update tag error:', error);
-    res.status(500).json({ error: 'Erreur lors de la mise à jour' });
+    logger.error('Update tag error:', error);
+    res.status(500).json({ error: 'Erreur lors de la mise Ã  jour' });
   }
 };
 
@@ -243,17 +244,17 @@ exports.deleteCaller = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Vérifier que l'appelant appartient au tenant
+    // VÃ©rifier que l'appelant appartient au tenant
     const checkResult = await client.query(
       'SELECT id FROM callers WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
 
     if (checkResult.rows.length === 0) {
-      throw new Error('Appelant non trouvé');
+      throw new Error('Appelant non trouvÃ©');
     }
 
-    // Mettre à jour les appels pour supprimer la référence
+    // Mettre Ã  jour les appels pour supprimer la rÃ©fÃ©rence
     await client.query(
       'UPDATE calls SET caller_id = NULL WHERE caller_id = $1 AND tenant_id = $2',
       [id, tenantId]
@@ -269,7 +270,7 @@ exports.deleteCaller = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Delete caller error:', error);
+    logger.error('Delete caller error:', error);
     res.status(400).json({ error: error.message || 'Erreur lors de la suppression' });
   } finally {
     client.release();
@@ -285,17 +286,17 @@ exports.deleteReason = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Vérifier que la raison appartient au tenant
+    // VÃ©rifier que la raison appartient au tenant
     const checkResult = await client.query(
       'SELECT id FROM reasons WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
 
     if (checkResult.rows.length === 0) {
-      throw new Error('Raison non trouvée');
+      throw new Error('Raison non trouvÃ©e');
     }
 
-    // Mettre à jour les appels pour supprimer la référence
+    // Mettre Ã  jour les appels pour supprimer la rÃ©fÃ©rence
     await client.query(
       'UPDATE calls SET reason_id = NULL WHERE reason_id = $1 AND tenant_id = $2',
       [id, tenantId]
@@ -311,7 +312,7 @@ exports.deleteReason = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Delete reason error:', error);
+    logger.error('Delete reason error:', error);
     res.status(400).json({ error: error.message || 'Erreur lors de la suppression' });
   } finally {
     client.release();
@@ -327,14 +328,14 @@ exports.deleteTag = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Vérifier que le tag appartient au tenant
+    // VÃ©rifier que le tag appartient au tenant
     const checkResult = await client.query(
       'SELECT id FROM tags WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
 
     if (checkResult.rows.length === 0) {
-      throw new Error('Tag non trouvé');
+      throw new Error('Tag non trouvÃ©');
     }
 
     // Supprimer les associations dans call_tags
@@ -355,7 +356,7 @@ exports.deleteTag = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Delete tag error:', error);
+    logger.error('Delete tag error:', error);
     res.status(400).json({ error: error.message || 'Erreur lors de la suppression' });
   } finally {
     client.release();
